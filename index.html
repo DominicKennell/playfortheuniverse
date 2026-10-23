@@ -311,8 +311,9 @@ body{background-color:var(--night);background-image:
 .qdpad button:active{background:rgba(242,193,78,.35)}
 .qa{position:absolute;right:16px;bottom:34px;width:78px;height:78px;border-radius:50%;background:var(--gold);color:#2a2108;font-family:var(--display);font-size:28px;border:0;box-shadow:0 4px 0 #0008;z-index:2;touch-action:none}
 .qa:active{transform:translateY(3px);box-shadow:0 1px 0 #0008}
-@media (hover:hover) and (pointer:fine){.qdpad,.qa{display:none}}
-@media (hover:none),(pointer:coarse){.qhint{display:none}}
+.qwrap:not(.touch) .qdpad,.qwrap:not(.touch) .qa{display:none}
+.qwrap.touch+.qhint{display:none}
+.qbtn[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
 .qwrap.talking .qdpad,.qwrap.talking .qa{display:none}
 .qdlg{position:absolute;left:10px;right:10px;bottom:10px;z-index:3;background:var(--paper);color:var(--paper-ink);border:3px solid #2b2833;border-radius:16px;padding:12px 16px 16px;box-shadow:0 5px 0 #0008;cursor:pointer;min-height:100px}
 .qdlg p{margin:0;font-size:clamp(16px,2.6vw,19px);font-weight:600;line-height:1.35}
@@ -352,6 +353,88 @@ body{background-color:var(--night);background-image:
 .qslot small{color:var(--dim);font-size:12px}
 .qhint{margin:0;color:var(--dim);text-align:center;font-size:14px}
 @media (max-width:520px){.qchip{font-size:12px;padding:3px 10px}.qgoal{max-width:62vw}}
+/* ---------- Care corner ---------- */
+.cheadbtns{display:flex;gap:8px;flex-wrap:wrap}
+.cgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:760px){.cgrid{grid-template-columns:minmax(0,1fr)}}
+.cstage{position:relative;aspect-ratio:1/1;width:100%;max-height:min(68vh,580px);margin:0 auto;border-radius:22px;overflow:hidden;border:2px solid var(--mat-line);touch-action:none;-webkit-user-select:none;user-select:none;
+  background:radial-gradient(120% 70% at 50% 0%,#cfe2ff 0,#a9c4f5 45%,#8aa7e6 100%);box-shadow:0 0 40px -12px rgba(120,140,255,.5)}
+.cfloor{position:absolute;left:-10%;right:-10%;bottom:-18%;height:46%;border-radius:50%;background:var(--ground,#9ccc4a);border-top:4px solid #2b283322}
+.cstage[data-fam="W"]{--ground:#9ccc4a}.cstage[data-fam="R"]{--ground:#cbbfb1}.cstage[data-fam="M"]{--ground:#a7c7da}
+.cstage::before{content:"";position:absolute;right:9%;top:9%;width:13%;aspect-ratio:1;border-radius:50%;background:#fff3b0;box-shadow:0 0 30px 8px #fff3b088;transition:background .6s}
+.cstage.night::before{background:#f4f1ff;box-shadow:-10px 6px 0 0 #2a2f63 inset,0 0 26px 4px #ffffff55}
+.cstage::after{content:"";position:absolute;inset:0;background:rgba(14,16,52,.58);opacity:0;transition:opacity .8s;pointer-events:none;z-index:3}
+.cstage.night::after{opacity:1}
+.cpet{position:absolute;left:19%;width:62%;bottom:11%;aspect-ratio:1/1;transform-origin:50% 100%;animation:cbreathe 3.2s ease-in-out infinite;z-index:1}
+.cpet.sad{animation-duration:5s;filter:saturate(.75)}
+.cstage.night .cpet{animation-duration:6s}
+.cpetin{position:relative;width:100%;height:100%;transform-origin:50% 100%}
+.cpetin img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none}
+@keyframes cbreathe{50%{transform:scale(1.025,.975)}}
+.cpetin.munch{animation:cmunch .5s ease 2}
+@keyframes cmunch{30%{transform:scale(1.08,.9)}60%{transform:scale(.95,1.06)}}
+.cpetin.wiggle{animation:cwig .6s ease}
+@keyframes cwig{20%{transform:rotate(-6deg)}40%{transform:rotate(6deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(3deg)}}
+.cpetin.jump{animation:cjump .45s ease}
+@keyframes cjump{40%{transform:translateY(-12%) scale(.96,1.05)}80%{transform:translateY(0) scale(1.05,.95)}}
+.cacc>span{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none}
+.cacc svg{width:100%;height:auto;display:block}
+.cmud{position:absolute;width:calc(15% * var(--s));aspect-ratio:1;transform:translate(-50%,-50%) rotate(20deg);border-radius:52% 44% 58% 40%;background:#7a5634;box-shadow:12px 8px 0 -6px #7a5634,-10px 10px 0 -7px #6b4a2c,inset 4px 4px 0 #8f6a45;pointer-events:none;transition:opacity .15s}
+.csay{position:absolute;top:4%;left:50%;transform:translateX(-50%);background:#fff;color:var(--paper-ink);border:3px solid #2b2833;border-radius:18px;padding:6px 14px;font-weight:700;font-size:clamp(15px,2.4vw,18px);max-width:86%;text-align:center;z-index:5;box-shadow:0 4px 0 #0004}
+.csay:empty{display:none}
+.csay.pop{animation:cpop .35s ease}
+@keyframes cpop{0%{transform:translateX(-50%) scale(.7)}70%{transform:translateX(-50%) scale(1.06)}}
+.cfx,.cstars{position:absolute;inset:0;pointer-events:none;z-index:4}
+.cstars{pointer-events:none}
+.cfxi{position:absolute;transform:translate(-50%,-50%);font-size:26px;pointer-events:none;line-height:1}
+.cfxi.heart{animation:cfloat 1.4s ease-out forwards}
+.cfxi.z{font-family:var(--display);color:#fff;font-size:30px;text-shadow:0 2px 0 #0006;animation:czz 2.6s ease-out forwards}
+.cfxi.spark{animation:cspark .7s ease-out forwards;font-size:30px}
+.cfxi.crumb{color:#8a6a3a;font-size:18px;animation:ccrumb .8s ease-in forwards}
+.cfxi.bubble{width:16px;height:16px;border-radius:50%;border:2px solid #fff;background:#ffffff55;animation:cfloat 1s ease-out forwards}
+.cfxi.food{font-size:48px;animation:cfood .65s ease-in forwards}
+@keyframes cfloat{to{transform:translate(-50%,-160%) scale(1.3);opacity:0}}
+@keyframes czz{to{transform:translate(60%,-320%) scale(1.5);opacity:0}}
+@keyframes cspark{0%{transform:translate(-50%,-50%) scale(.3)}50%{transform:translate(-50%,-50%) scale(1.4)}100%{transform:translate(-50%,-50%) scale(.6);opacity:0}}
+@keyframes ccrumb{to{transform:translate(-50%,180%);opacity:0}}
+@keyframes cfood{to{top:52%;transform:translate(-50%,-50%) scale(.4);opacity:.3}}
+.cstar{position:absolute;top:-12%;font-size:36px;line-height:1;background:none;border:0;padding:10px;cursor:pointer;pointer-events:auto;animation:cfall linear forwards;transform:translateX(-50%);touch-action:none}
+@keyframes cfall{to{top:104%}}
+.cgame{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(12,16,40,.85);color:#fff;border-radius:999px;padding:4px 16px;font-weight:700;font-size:18px}
+.csponge{position:absolute;z-index:6;font-size:44px;transform:translate(-50%,-50%);pointer-events:none;left:50%;top:70%}
+.cstage.scrub{cursor:grab}
+.cside{display:flex;flex-direction:column;gap:12px}
+.cfriend{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px}
+.cfriend b{color:var(--gold)}
+.cbar{display:block;height:12px;border-radius:999px;background:#0c1028;border:1px solid var(--mat-line);overflow:hidden;flex:1}
+.cbar i{display:block;height:100%;border-radius:999px;transition:width .5s ease}
+.cbig i{background:linear-gradient(90deg,#ff8fb1,#f2c14e)}
+.cmeters{gap:8px}
+.cmeter{display:grid;grid-template-columns:26px 54px 1fr;align-items:center;gap:8px}
+.cmeter .ci{font-size:20px;text-align:center}
+.cmeter .cl{font-weight:700;font-size:14px;color:var(--dim)}
+.cacts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.cact{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--mat);border:2px solid var(--mat-line);border-radius:16px;padding:10px 4px;cursor:pointer;font-weight:700;font-size:14px}
+.cact span{font-size:28px;line-height:1.1}
+.cact b{font-weight:700}
+.cact:hover:not(:disabled),.cact[aria-pressed="true"]{border-color:var(--gold)}
+.cact:disabled{opacity:.45;cursor:not-allowed}
+.chint{margin:0;color:var(--dim)}
+.cfoods{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.cfood{display:flex;flex-direction:column;align-items:center;gap:2px;background:#0c1028;border:2px solid var(--mat-line);border-radius:14px;padding:8px 6px;cursor:pointer;font-weight:700;font-size:13px;text-align:center}
+.cfood .em{font-size:32px;line-height:1.1}
+.cfood small{color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.cfood:hover{border-color:var(--gold)}
+.caccs{display:flex;flex-wrap:wrap;gap:8px}
+.caccb{display:flex;align-items:center;gap:6px;background:#0c1028;border:2px solid var(--mat-line);border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:700;font-size:14px}
+.caccb .mini svg{width:34px;height:auto;display:block}
+.caccb[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
+.caccb.locked{opacity:.55;cursor:not-allowed}
+.caccb small{color:var(--dim);font-weight:600;margin-left:4px}
+.cpickcards{display:flex;flex-wrap:wrap;gap:10px}
+.cpickcards .card{--cw:clamp(84px,20vw,118px);cursor:pointer}
+.cpickcards .card.sel{transform:none}
+@media (max-width:760px){.cstage{max-width:min(100%,38vh);position:sticky;top:8px;z-index:6}.cact{padding:8px 2px;font-size:13px}.cact span{font-size:24px}.cmeters{gap:4px}}
 </style>
 </head>
 <body>
@@ -382,6 +465,7 @@ body{background-color:var(--night);background-image:
     <div class="deckhead"><div><div class="label">Play for the Universe</div><h2>How do you want to play?</h2></div></div>
     <div class="modes">
       <button class="mode" id="modeQuest"><span class="big" aria-hidden="true">&#10022;</span><b>Adventure</b><small>Explore a planet, battle the families and collect their cards.</small></button>
+      <button class="mode" id="modeCare"><span class="big" aria-hidden="true">&#x2764;&#xFE0F;</span><b>Care corner</b><small>Look after your favourite creature: feed it, play, clean it and dress it up.</small></button>
       <button class="mode" id="modeSolo"><span class="big" aria-hidden="true">★</span><b>Play the Gamekeeper</b><small>Take on the computer. Choose easy or clever.</small></button>
       <button class="mode" id="modeFriend"><span class="big" aria-hidden="true">⇄</span><b>Play a friend online</b><small id="friendNote">Make a game code and share it, or join a friend's game with their code.</small></button>
     </div>
@@ -446,7 +530,7 @@ body{background-color:var(--night);background-image:
       <canvas id="qCanvas" role="img" aria-label="The adventure map"></canvas>
       <div class="qhud">
         <span class="qleft"><span class="qchip" id="qZone">Adventure</span><span class="qchip qgoal" id="qGoal"></span></span>
-        <span class="qright"><span class="qchip qshards" id="qShards"></span><button class="qchip qbtn" id="qPackBtn">Pack<b id="qCards"></b></button><button class="qchip qbtn" id="qMenu">Menu</button></span>
+        <span class="qright"><span class="qchip qshards" id="qShards"></span><button class="qchip qbtn" id="qCareBtn">&#x2764;&#xFE0F; Care</button><button class="qchip qbtn" id="qPackBtn">Pack<b id="qCards"></b></button><button class="qchip qbtn" id="qTouchBtn" aria-pressed="false">Touch: off</button><button class="qchip qbtn" id="qMenu">Menu</button></span>
       </div>
       <div class="qbanner" id="qBanner" aria-live="polite"></div>
       <div class="qdpad" id="qDpad" aria-hidden="true"><button data-dir="up" style="grid-area:1/2">&#9650;</button><button data-dir="left" style="grid-area:2/1">&#9664;</button><button data-dir="right" style="grid-area:2/3">&#9654;</button><button data-dir="down" style="grid-area:3/2">&#9660;</button></div>
@@ -466,6 +550,42 @@ body{background-color:var(--night);background-image:
       <div class="qover" id="qPack" hidden role="dialog" aria-labelledby="qPackHead"><div class="qpackhead"><div><h2 id="qPackHead">Your pack</h2><p id="qPackCount"></p></div><button class="btn primary" id="qPackClose">Done</button></div><div id="qPackBody"></div></div>
     </div>
     <p class="qhint">Arrow keys or WASD to walk &middot; Space to talk &middot; P for your pack</p>
+  </section>
+
+  <section class="screen stack" id="screenCare" hidden aria-label="Care corner">
+    <div class="deckhead"><div><div class="label">Care corner</div><h2 id="cTitle">Your creature</h2></div><div class="cheadbtns"><button class="btn" id="cSwap">Change favourite</button><button class="btn" id="cBack">Back</button></div></div>
+    <div class="cgrid" id="cMain">
+      <div class="cstage" id="cStage" data-fam="W">
+        <div class="csay" id="cSay" aria-live="polite"></div>
+        <div class="cfloor" aria-hidden="true"></div>
+        <div class="cpet" id="cPetWrap"><div class="cpetin" id="cPet"><img id="cPetImg" alt="" draggable="false"><div class="cdirt" id="cDirt"></div><div class="cacc" id="cAcc"></div></div></div>
+        <div class="cfx" id="cFx" aria-hidden="true"></div>
+        <div class="cstars" id="cStars"></div>
+        <div class="cgame" id="cGame" hidden><span id="cGameInfo"></span></div>
+        <span class="csponge" id="cSponge" hidden aria-hidden="true">&#x1F9FD;</span>
+      </div>
+      <div class="cside">
+        <div class="zone">
+          <div class="field"><label class="label" for="cName">Name</label><input id="cName" maxlength="14" autocomplete="off"></div>
+          <div class="cfriend"><span class="label">Friendship</span><b id="cLevel">Level 1</b></div>
+          <div class="cbar cbig" aria-hidden="true"><i id="cLove"></i></div>
+        </div>
+        <div class="zone cmeters" id="cMeters"></div>
+        <div class="cacts" id="cActs" role="group" aria-label="Care actions">
+          <button class="cact" data-act="feed"><span aria-hidden="true">&#x1F34E;</span>Feed</button>
+          <button class="cact" data-act="play"><span aria-hidden="true">&#x2B50;</span>Play</button>
+          <button class="cact" data-act="clean"><span aria-hidden="true">&#x1F9FC;</span>Clean</button>
+          <button class="cact" data-act="sleep"><span aria-hidden="true">&#x1F319;</span><b id="cSleepLabel">Sleep</b></button>
+          <button class="cact" data-act="dress"><span aria-hidden="true">&#x1F380;</span>Dress up</button>
+        </div>
+        <div class="zone cpanel" id="cPanel" hidden></div>
+      </div>
+    </div>
+    <div class="zone cpick" id="cPick" hidden>
+      <div class="zone-head"><h2>Choose your favourite creature</h2><button class="btn" id="cPickCancel">Cancel</button></div>
+      <p class="chint" id="cPickNote"></p>
+      <div class="cpickcards" id="cPickCards"></div>
+    </div>
   </section>
 
   <section class="screen stack" id="screenGame" hidden aria-label="Game">
@@ -1257,7 +1377,7 @@ function renderRecord(){ const r=getRecord(); $("record").textContent=(r.w+r.l+r
 
 let WANT = "solo";   // which mode the player picked on the mode screen
 function showScreen(name){
-  for (const s of ["Start","Mode","Deck","Lobby","Game","Quest"]) $("screen"+s).hidden = name!==s.toLowerCase();
+  for (const s of ["Start","Mode","Deck","Lobby","Game","Quest","Care"]) $("screen"+s).hidden = name!==s.toLowerCase();
   if (name==="deck"){
     renderDecks(); renderRecord();
     $("deckModeLabel").textContent = WANT==="solo" ? "Playing the Gamekeeper" : "Playing a friend online";
@@ -1276,6 +1396,7 @@ function showScreen(name){
   }
   window.scrollTo(0,0);
   if (name==="quest") questShown();
+  if (name==="care") careShown(); else careHide();
 }
 function savedName(){ try{ return localStorage.getItem("pftu-name")||""; }catch(e){ return ""; } }
 $("myName").value = savedName();
@@ -1410,6 +1531,7 @@ function qPackValid(){ SLOTS.forEach(s=>{ if (!Q.pack[s] || !Q.owned.includes(Q.
 
 /* ---------- Runtime state ---------- */
 const QP = {x:3, y:27, dir:"up", mv:null};
+const QF = {x:3, y:27, mv:null};   // your favourite creature from the Care corner, following you
 let QN = [];                  // characters, with their live positions
 let QS = "off";               // off | title | walk | talk | busy | battle
 let HELD = null, Q_RAF = 0, Q_ZONE = "", Q_SAVE_T = 0;
@@ -1516,6 +1638,15 @@ function drawPlayer(c, x, y, t, moving, now){
   else { c.strokeStyle="#e0c27a"; c.lineWidth=t*.03; c.beginPath(); c.arc(t/2,t*.5,t*.12,Math.PI*1.1,Math.PI*1.9); c.stroke(); }
   c.restore();
 }
+function drawFollower(c,id,x,y,t,now){
+  const im=careArt(id); const moving=!!QF.mv;
+  const bob = moving ? Math.abs(Math.sin(now/80))*t*.08 : Math.sin(now/600)*t*.02;
+  c.save(); c.translate(x,y);
+  c.beginPath(); c.ellipse(t/2,t*.9,t*.26,t*.07,0,0,Math.PI*2); c.fillStyle="#00000030"; c.fill();
+  if (im){ const s=Math.min(t*.86/im.naturalWidth, t*.86/im.naturalHeight), w=im.naturalWidth*s, h=im.naturalHeight*s; c.drawImage(im,(t-w)/2,t*.92-h-bob,w,h); }
+  if (!moving && Math.floor(now/2600)%3===0){ c.globalAlpha=.5+.5*Math.sin(now/300); c.font=`${Math.round(t*.26)}px sans-serif`; c.textAlign="center"; c.fillText("\u2764\uFE0F",t*.8,t*.08); c.globalAlpha=1; }
+  c.restore();
+}
 function star(c,x,y,r,col){ c.beginPath(); for (let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, k=i%2?r*.45:r; c.lineTo(x+Math.cos(a)*k,y+Math.sin(a)*k); } c.closePath(); c.fillStyle=col; c.fill(); }
 function drawNpc(c, n, x, y, t, now){
   const bob = Math.sin(now/420 + n.x)*t*.02;
@@ -1579,11 +1710,14 @@ function qDraw(now){
     if (ch==="G") drawGate(c,sx,sy,t,now);
     if (ch==="S"){ const sh=QPLINTH[x+","+y]; if (Q.flags[sh]){ const g=c.createRadialGradient(sx+t/2,sy+t*.4,0,sx+t/2,sy+t*.4,t*.5); g.addColorStop(0,SHARD_COL[sh]+"cc"); g.addColorStop(1,SHARD_COL[sh]+"00"); c.fillStyle=g; c.fillRect(sx,sy-t*.2,t,t); star(c,sx+t/2,sy+t*.42+Math.sin(now/400)*t*.04,t*.17,SHARD_COL[sh]); } }
   }
-  const actors=[...QN.map(n=>({n, pos:lerpPos(n,now)})), {me:true, pos:[px,py]}].sort((a,b)=>a.pos[1]-b.pos[1]);
+  const actors=[...QN.map(n=>({n, pos:lerpPos(n,now)})), {me:true, pos:[px,py]}];
+  const fid=careFavCached();
+  if (fid && (QF.mv || QF.x!==QP.x || QF.y!==QP.y)) actors.push({fol:fid, pos:lerpPos(QF,now)});
+  actors.sort((a,b)=>a.pos[1]-b.pos[1]);
   for (const a of actors){
     const sx=a.pos[0]*t-camX, sy=a.pos[1]*t-camY;
     if (sx<-t*2||sy<-t*2||sx>W+t||sy>H+t) continue;
-    if (a.me) drawPlayer(c,sx,sy,t,!!QP.mv,now); else drawNpc(c,a.n,sx,sy,t,now);
+    if (a.me) drawPlayer(c,sx,sy,t,!!QP.mv,now); else if (a.fol) drawFollower(c,a.fol,sx,sy,t,now); else drawNpc(c,a.n,sx,sy,t,now);
   }
   if (QPATH && QPATH.mark){ const [mx,my]=QPATH.mark; c.beginPath(); c.ellipse(mx*t-camX+t/2,my*t-camY+t*.8,t*.3,t*.1,0,0,Math.PI*2); c.strokeStyle=`rgba(242,193,78,${.5+.4*Math.sin(now/150)})`; c.lineWidth=t*.05; c.stroke(); }
   if (QS==="walk" && !QP.mv && !QPATH){
@@ -1591,9 +1725,20 @@ function qDraw(now){
     if (qCanAct(fx,fy)) promptBubble(c, fx*t-camX+t/2, fy*t-camY-(npcAt(fx,fy)?t*.62:t*.1), t, now);
   }
 }
-const TOUCH = (()=>{ try{ return matchMedia("(pointer:coarse)").matches; }catch(e){ return false; } })();
+/* Touch controls: on automatically for touch screens, and the Touch button switches them on or off. */
+const TOUCH_KEY="pftu-touch";
+function touchPref(){ try{ return localStorage.getItem(TOUCH_KEY); }catch(e){ return null; } }
+function touchAuto(){ try{ return matchMedia("(pointer:coarse)").matches || (navigator.maxTouchPoints||0)>0; }catch(e){ return false; } }
+function touchOn(){ return $("qWrap").classList.contains("touch"); }
+function setTouch(on, remember){
+  $("qWrap").classList.toggle("touch", on);
+  $("qTouchBtn").setAttribute("aria-pressed", on);
+  $("qTouchBtn").textContent = on ? "Touch: on" : "Touch: off";
+  if (remember){ try{ localStorage.setItem(TOUCH_KEY, on?"on":"off"); }catch(e){} }
+}
+setTouch(touchPref() ? touchPref()==="on" : touchAuto(), false);
 function promptBubble(c,x,y,t,now){
-  const label = TOUCH ? "A" : "Space", fs=Math.round(t*.26);
+  const label = touchOn() ? "A" : "Space", fs=Math.round(t*.26);
   c.font=`bold ${fs}px "Lilita One","Arial Rounded MT Bold",sans-serif`;
   const w=Math.max(t*.42, c.measureText(label).width+t*.26), h=t*.4, yy=y+Math.sin(now/220)*t*.04;
   c.beginPath(); c.roundRect ? c.roundRect(x-w/2,yy-h/2,w,h,h/2) : c.rect(x-w/2,yy-h/2,w,h);
@@ -1619,6 +1764,7 @@ function drawGate(c,x,y,t,now){
 /* ---------- Movement and the main loop ---------- */
 function qLoop(now){
   if (QS==="off" || $("screenQuest").hidden) { Q_RAF=0; return; }
+  if (QF.mv && now-QF.mv.t0>=STEP) QF.mv=null;
   if (QP.mv && now-QP.mv.t0>=STEP){ QP.mv=null; qArrive(); }
   for (const n of QN) if (n.mv && now-n.mv.t0>=STEP){ const done=n.mv.done; n.mv=null; done&&done(); }
   if (!QP.mv && QS==="walk" && HELD) qTryMove(HELD, now);
@@ -1634,8 +1780,9 @@ function qTryMove(dir, now, fresh){
   if (QS!=="walk" || QP.mv) return false;
   QP.dir=dir; const [dx,dy]=DIRV[dir], x=QP.x+dx, y=QP.y+dy;
   if (!passable(x,y) || npcAt(x,y)){ if (fresh && qCanAct(x,y)) qAct(); return false; }   // walk into someone to talk to them
-  QP.mv={fx:QP.x, fy:QP.y, t0:now??performance.now()}; QP.x=x; QP.y=y;
-  if (reduceMotion) QP.mv.t0-=STEP*0.6;
+  QF.mv={fx:QF.x, fy:QF.y, t0:now??performance.now()}; QF.x=QP.x; QF.y=QP.y;
+  QP.mv={fx:QP.x, fy:QP.y, t0:QF.mv.t0}; QP.x=x; QP.y=y;
+  if (reduceMotion){ QP.mv.t0-=STEP*0.6; QF.mv.t0-=STEP*0.6; }
   return true;
 }
 /* Tap the map to walk there. Tap a character, sign or gate to walk up to it and talk. */
@@ -1868,13 +2015,13 @@ function qTitle(){
   $("qNew").dataset.sure="";
   $("qSaveNote").textContent = has ? (()=>{ const q=qLoad(); return `Saved: ${q.owned.length} cards, ${["forest","rock","metal"].filter(s=>q.flags[s]).length} of 3 shards.`; })() : "";
   if (!Q) { Q=qFresh(); }
-  qReset(); QP.x=Q.x; QP.y=Q.y; QP.dir=Q.dir; QP.mv=null;
+  qReset(); QP.x=Q.x; QP.y=Q.y; QP.dir=Q.dir; QP.mv=null; QF.x=QP.x; QF.y=QP.y; QF.mv=null;
   if (!Q_RAF) Q_RAF=requestAnimationFrame(qLoop);
 }
 async function qBegin(fresh){
   if (fresh){ Q=qFresh(); try{ localStorage.removeItem(QKEY); }catch(e){} }
   else Q=qLoad()||qFresh();
-  qReset(); QP.x=Q.x; QP.y=Q.y; QP.dir=Q.dir; QP.mv=null;
+  qReset(); QP.x=Q.x; QP.y=Q.y; QP.dir=Q.dir; QP.mv=null; QF.x=QP.x; QF.y=QP.y; QF.mv=null;
   $("qTitle").hidden=true; $("qWrap").classList.remove("talking"); QPATH=null; qHud(); Q_ZONE=""; qArrive();
   if (!Q.intro){
     QS="busy";
@@ -1882,7 +2029,7 @@ async function qBegin(fresh){
       "Long ago, the families of Wood, Rock and Metal began the Endless Games. Whoever wins, plays for the universe.",
       "Beat the champion of each family and win their star shards. Then come and find me in the Observatory."]);
     Q.intro=true; qSave();
-    await talk(null, ["You got a pack of 15 cards!", TOUCH ? "Walk with the arrows, or tap where you want to go. To talk to someone, walk into them or tap them." : "Walk with the arrow keys, or click where you want to go. To talk to someone, walk into them or click them."]);
+    await talk(null, ["You got a pack of 15 cards!", touchOn() ? "Walk with the arrows, or tap where you want to go. To talk to someone, walk into them or tap them." : "Walk with the arrow keys, or click where you want to go. To talk to someone, walk into them or click them."]);
   }
   QS="walk";
 }
@@ -1913,6 +2060,8 @@ $("qCanvas").addEventListener("pointerdown", e=>{
   if (Math.abs(tx-QP.x)+Math.abs(ty-QP.y)===1 && qCanAct(tx,ty)){ QPATH=null; QP.dir = tx>QP.x?"right":tx<QP.x?"left":ty>QP.y?"down":"up"; qAct(); return; }
   QPATH = qPathTo(tx,ty);
 });
+$("qTouchBtn").addEventListener("click", ()=>setTouch(!touchOn(), true));
+$("qWrap").addEventListener("pointerdown", e=>{ if (e.pointerType==="touch" && !touchOn() && touchPref()!=="off") setTouch(true, false); }, true);
 $("qA").addEventListener("pointerdown", e=>{ e.preventDefault(); qAct(); });
 $("qDlg").addEventListener("click", e=>{ if (e.target.closest("[data-yn]")) return; dlgNext(); });
 $("qPackBtn").addEventListener("click", qPackOpen);
@@ -1927,6 +2076,348 @@ $("qNew").addEventListener("click", ()=>{
   qBegin(true);
 });
 $("modeQuest").addEventListener("click", ()=>showScreen("quest"));
+
+/* ================= Care: look after your favourite creature ================= */
+/* It never gets ill and never goes away. Left alone, it just gets a bit hungry or bored,
+   and cheers up as soon as you come back. */
+var CKEY = "pftu-care";
+var C = null;                       // {fav, pets:{id:{name,food,fun,clean,energy,love,acc,sleep,t}}}
+var CARE_FROM = "mode", CARE_TIMER = 0, CARE_MODE = "", CARE_GAME = null, CARE_ZZZ = 0;
+var CSTATS = [
+  {k:"food",   name:"Food",  icon:"\u{1F34E}", col:"#f29a4e"},
+  {k:"fun",    name:"Fun",   icon:"⭐",    col:"#f2c14e"},
+  {k:"clean",  name:"Clean", icon:"\u{1F9FC}", col:"#58b8ea"},
+  {k:"energy", name:"Sleep", icon:"\u{1F319}", col:"#9d8de0"}];
+var CFOODS = [
+  {id:"sun",    name:"Sunshine drops", em:"☀️",  fav:"W"},
+  {id:"pie",    name:"Pebble pie",     em:"\u{1F967}",     fav:"R"},
+  {id:"bolt",   name:"Bolt biscuits",  em:"\u{1F529}",     fav:"M"},
+  {id:"berry",  name:"Star berries",   em:"\u{1F352}"},
+  {id:"cake",   name:"Moon cake",      em:"\u{1F370}"}];
+var CACC = [   // dress-up, unlocked by friendship level
+  {id:"bow",    name:"Bow",          lvl:2, at:"head"},
+  {id:"flower", name:"Flower crown", lvl:3, at:"head"},
+  {id:"hat",    name:"Top hat",      lvl:4, at:"head"},
+  {id:"scarf",  name:"Scarf",        lvl:5, at:"neck"},
+  {id:"specs",  name:"Glasses",      lvl:6, at:"face"},
+  {id:"crown",  name:"Star crown",   lvl:8, at:"head"}];
+var ACC_SVG = {
+  bow:`<svg viewBox="0 0 100 50"><path d="M50 25 C30 2 8 6 10 25 C8 44 30 48 50 25 C70 2 92 6 90 25 C92 44 70 48 50 25Z" fill="#ff8fb1" stroke="#2b2833" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="25" r="8" fill="#e85a8a" stroke="#2b2833" stroke-width="4"/></svg>`,
+  flower:`<svg viewBox="0 0 120 40"><path d="M8 30 Q60 14 112 30" fill="none" stroke="#4f8a12" stroke-width="5" stroke-linecap="round"/>${[16,38,60,82,104].map((x,i)=>`<g><circle cx="${x}" cy="${i%2?20:24}" r="10" fill="${["#ffffff","#ffb3c7","#f2c14e","#ffb3c7","#ffffff"][i]}" stroke="#2b2833" stroke-width="3"/><circle cx="${x}" cy="${i%2?20:24}" r="4" fill="#c06b2d"/></g>`).join("")}</svg>`,
+  hat:`<svg viewBox="0 0 100 80"><rect x="28" y="6" width="44" height="54" rx="6" fill="#2b2833"/><rect x="28" y="42" width="44" height="10" fill="#e85a5a"/><ellipse cx="50" cy="64" rx="44" ry="10" fill="#2b2833"/></svg>`,
+  scarf:`<svg viewBox="0 0 120 60"><path d="M6 16 Q60 34 114 16 L112 32 Q60 50 8 32Z" fill="#e85a5a" stroke="#2b2833" stroke-width="4" stroke-linejoin="round"/><path d="M78 30 L88 58 L100 54 L92 26" fill="#e85a5a" stroke="#2b2833" stroke-width="4" stroke-linejoin="round"/><path d="M30 24 L34 36 M50 28 L52 40 M70 28 L70 40" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>`,
+  specs:`<svg viewBox="0 0 120 44"><circle cx="34" cy="22" r="17" fill="#ffffff55" stroke="#2b2833" stroke-width="5"/><circle cx="86" cy="22" r="17" fill="#ffffff55" stroke="#2b2833" stroke-width="5"/><path d="M51 20 Q60 12 69 20" fill="none" stroke="#2b2833" stroke-width="5"/></svg>`,
+  crown:`<svg viewBox="0 0 100 60"><path d="M10 54 L14 14 L32 34 L50 6 L68 34 L86 14 L90 54Z" fill="#f2c14e" stroke="#2b2833" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="40" r="6" fill="#58b8ea" stroke="#2b2833" stroke-width="3"/><circle cx="28" cy="44" r="4" fill="#e85a8a"/><circle cx="72" cy="44" r="4" fill="#9ccc4a"/></svg>`};
+var LOVE_STEP = 15;
+const careLevel = p => Math.min(10, 1 + Math.floor(p.love/LOVE_STEP));
+const clamp100 = v => Math.max(0, Math.min(100, v));
+
+/* ---------- Saving ---------- */
+function careLoad(){ try{ const c=JSON.parse(localStorage.getItem(CKEY)); if (c && c.pets) return c; }catch(e){} return {fav:null, pets:{}}; }
+function careSave(){ CFAV=C.fav; try{ localStorage.setItem(CKEY, JSON.stringify(C)); }catch(e){} }
+var CFAV;
+function careFavCached(){ if (CFAV===undefined){ try{ CFAV=careLoad().fav; }catch(e){ CFAV=null; } } return CFAV; }
+function careOwned(){
+  const q = (typeof qLoad==="function") ? qLoad() : null;
+  return q ? q.owned.slice() : SLOTS.map(s=>BASE[s]);
+}
+function careFavId(){ try{ const c=C||careLoad(); return c.fav; }catch(e){ return null; } }
+function carePet(){ return C && C.fav ? C.pets[C.fav] : null; }
+function careNewPet(id){ return {name:byId(id).name, food:80, fun:80, clean:90, energy:85, love:0, acc:null, sleep:false, t:Date.now()}; }
+
+/* Time passes while you're away (up to three days' worth), gently. */
+function careDecay(p){
+  const now=Date.now(), h=Math.min(72, Math.max(0,(now-(p.t||now))/3600000)); p.t=now;
+  if (!h) return;
+  const down=(k,rate)=>{ p[k]=Math.max(Math.min(p[k],20), p[k]-rate*h); };   // being left alone never takes a bar below 20
+  if (p.sleep){ p.energy=clamp100(p.energy+120*h); down("food",3); down("clean",2); }
+  else { down("food",6); down("fun",8); down("clean",4); down("energy",5); }
+}
+
+/* ---------- Turning the drawing's white paper see-through ---------- */
+var CART = {}, CBOX = {};
+/* Where the drawing really is inside the creature box, in % of the box (the picture is fitted into a square). */
+function careBody(){
+  const b=CBOX[C.fav]; if (!b) return {l:20,t:15,w:60,h:70};
+  const ar=b.ar, iw=ar>=1?100:100*ar, ih=ar>=1?100/ar:100, ox=(100-iw)/2, oy=(100-ih)/2;
+  return {l:ox+b.x0*iw, t:oy+b.y0*ih, w:(b.x1-b.x0)*iw, h:(b.y1-b.y0)*ih};
+}
+function careArt(id, cb){
+  if (CART[id]) { cb && cb(CART[id]); return CART[id]; }
+  const im=new Image();
+  im.onload=()=>{
+    const cv=document.createElement("canvas"); cv.width=im.naturalWidth; cv.height=im.naturalHeight;
+    const c=cv.getContext("2d"); c.drawImage(im,0,0);
+    try{
+      const d=c.getImageData(0,0,cv.width,cv.height), a=d.data;
+      const W=cv.width, H=cv.height, rows=new Uint32Array(H), cols=new Uint32Array(W);
+      // Clear the paper from the edges inwards (like a paint-bucket fill), so pale colours inside the outline stay.
+      const paper=k=>{ const mn=Math.min(a[k],a[k+1],a[k+2]), mx=Math.max(a[k],a[k+1],a[k+2]); return mn>227 && mx-mn<30; };
+      const seen=new Uint8Array(W*H), stack=[];
+      for (let x=0;x<W;x++){ stack.push(x, (H-1)*W+x); } for (let y=0;y<H;y++){ stack.push(y*W, y*W+W-1); }
+      while (stack.length){
+        const p=stack.pop(); if (seen[p]) continue; seen[p]=1;
+        if (!paper(p*4)) continue;
+        a[p*4+3]=0;
+        const x=p%W;
+        if (x>0) stack.push(p-1); if (x<W-1) stack.push(p+1); if (p>=W) stack.push(p-W); if (p<W*(H-1)) stack.push(p+W);
+      }
+      for (let i=0;i<a.length;i+=4){
+        if (a[i+3] && Math.min(a[i],a[i+1],a[i+2])>246) a[i+3]=0;   // stray pure-white specks
+        if (a[i+3]>80){ const px=(i>>2)%W, py=((i>>2)/W)|0; rows[py]++; cols[px]++; }
+      }
+      c.putImageData(d,0,0);
+      const edge=(arr,n,min)=>{ let s=0; while(s<n && arr[s]<min) s++; let e=n-1; while(e>s && arr[e]<min) e--; return [s,e]; };
+      const [y0,y1]=edge(rows,H,Math.max(2,W*0.012)), [x0,x1]=edge(cols,W,Math.max(2,H*0.012));
+      if (x1>x0 && y1>y0) CBOX[id]={x0:x0/cv.width, y0:y0/cv.height, x1:(x1+1)/cv.width, y1:(y1+1)/cv.height, ar:cv.width/cv.height};
+    }catch(e){}
+    const out=new Image(); out.onload=()=>{ CART[id]=out; cb && cb(out); }; out.src=cv.toDataURL("image/png");
+  };
+  im.src=byId(id).art;
+  return null;
+}
+
+/* ---------- Screen ---------- */
+function careShown(){
+  C = careLoad();
+  CARE_MODE=""; careEndGame(true);
+  $("cPanel").hidden=true; $("cBack").textContent = CARE_FROM==="quest" ? "Back to the map" : "Back";
+  if (!C.fav || !C.pets[C.fav]) return carePick();
+  $("cPick").hidden=true; $("cMain").hidden=false;
+  careDecay(carePet()); careSave();
+  careDraw(true);
+  clearInterval(CARE_TIMER); CARE_TIMER=setInterval(careTick, 1000);
+}
+function careHide(){ clearInterval(CARE_TIMER); CARE_TIMER=0; if (typeof careEndGame==="function") careEndGame(true); }
+function carePick(){
+  $("cMain").hidden=true; $("cPick").hidden=false;
+  const own=careOwned();
+  $("cPickCards").innerHTML = own.map(id=>{ const c=byId(id); return cardHTML({...c,uid:id},{button:true,sel:C.fav===id}); }).join("");
+  $("cPickNote").textContent = C.fav ? "Pick a different friend. Your old friend will remember you if you switch back." : "Pick the creature you'd like to look after. Win more cards in the Adventure to have more to choose from.";
+  $("cPickCancel").hidden = !C.fav;
+}
+function careTick(){
+  const p=carePet(); if (!p || $("screenCare").hidden) return;
+  careDecay(p);
+  if (p.sleep && Date.now()-CARE_ZZZ>1400){ CARE_ZZZ=Date.now(); careFx("z", 58+Math.random()*10, 30, "Z"); }
+  if (p.sleep && p.energy>=100){ p.sleep=false; careSay(`${p.name} wakes up, full of energy!`); }
+  careDraw();
+  if (Date.now()%10000<1000) careSave();
+}
+function careNeed(p){
+  if (p.sleep) return "Zzz... shh, sleeping.";
+  const low=CSTATS.map(s=>[s.k,p[s.k]]).sort((a,b)=>a[1]-b[1])[0];
+  if (low[1]<35) return {food:"I'm hungry...", fun:"Play with me!", clean:"I feel a bit muddy.", energy:"*yawn* I'm sleepy..."}[low[0]];
+  if (CSTATS.every(s=>p[s.k]>=70)) return "I'm so happy!";
+  return "Hi! What shall we do?";
+}
+var CSAY_T=0;
+function careSay(t, keep){ $("cSay").textContent=t; $("cSay").classList.remove("pop"); void $("cSay").offsetWidth; $("cSay").classList.add("pop"); CSAY_T=Date.now()+(keep||3500); }
+function careDraw(full){
+  const p=carePet(); if (!p) return;
+  const c=byId(C.fav);
+  if (full){
+    $("cName").value=p.name; $("cTitle").textContent=p.name;
+    $("cStage").dataset.fam=c.f;
+    $("cPetImg").alt=`${p.name}, your ${FAM[c.f].name} ${c.v}`;
+    const set=im=>{ if (C.fav===c.id){ $("cPetImg").src=im.src; careDirt(); careAccDraw(); } };
+    $("cPetImg").src=c.art; careArt(c.id,set);
+    careDirt(); careAccDraw();
+  }
+  $("cMeters").innerHTML=CSTATS.map(s=>{ const v=Math.round(p[s.k]); return `<div class="cmeter"><span class="ci" aria-hidden="true">${s.icon}</span><span class="cl">${s.name}</span><span class="cbar" role="progressbar" aria-label="${s.name}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${v}"><i style="width:${v}%;background:${s.col}"></i></span></div>`; }).join("");
+  const lv=careLevel(p), into=p.love-(lv-1)*LOVE_STEP;
+  $("cLevel").textContent = lv>=10 ? "Level 10 (best friends!)" : `Level ${lv}`;
+  $("cLove").style.width = (lv>=10?100:Math.round(into/LOVE_STEP*100))+"%";
+  $("cStage").classList.toggle("night", p.sleep);
+  $("cPetWrap").classList.toggle("sad", !p.sleep && CSTATS.some(s=>p[s.k]<25));
+  document.querySelectorAll(".cact").forEach(b=>{ const a=b.dataset.act; b.disabled = p.sleep && a!=="sleep"; });
+  $("cSleepLabel").textContent = p.sleep ? "Wake up" : "Sleep";
+  if (Date.now()>CSAY_T){ const n=careNeed(p); if ($("cSay").textContent!==n){ $("cSay").textContent=n; } }
+  if (full || Math.round((100-p.clean)/14)!==$("cDirt").children.length) careDirt();
+}
+function careGive(stat, amt, love){
+  const p=carePet(); const before=careLevel(p);
+  if (stat){ if (p[stat]>=98) love=0; p[stat]=clamp100(p[stat]+amt); }   // friendship grows when you meet a real need
+  p.love+=love||0;
+  const after=careLevel(p);
+  if (after>before){
+    const un=CACC.filter(a=>a.lvl===after);
+    setTimeout(()=>careSay(`Friendship level ${after}!${un.length?` You unlocked: ${un.map(a=>a.name).join(", ")}!`:""}`, 5000), 900);
+    for (let i=0;i<8;i++) setTimeout(()=>careFx("heart", 20+Math.random()*60, 40+Math.random()*30, "❤️"), i*90);
+  }
+  careSave(); careDraw();
+}
+
+/* ---------- Effects ---------- */
+function careFx(kind, xPct, yPct, text){
+  const s=document.createElement("span"); s.className="cfxi "+kind; s.textContent=text||"";
+  s.style.left=xPct+"%"; s.style.top=yPct+"%";
+  s.addEventListener("animationend", ()=>s.remove());
+  $("cFx").appendChild(s); setTimeout(()=>s.remove(), 4000);
+  return s;
+}
+function careBounce(cls){ const p=$("cPet"); p.classList.remove("munch","wiggle","jump"); void p.offsetWidth; p.classList.add(cls); }
+
+/* ---------- Feed ---------- */
+function careFeedPanel(){
+  const fam=byId(C.fav).f;
+  return `<p class="chint">What would ${esc(carePet().name)} like?</p><div class="cfoods">${CFOODS.map(f=>`<button class="cfood" data-food="${f.id}"><span class="em" aria-hidden="true">${f.em}</span>${esc(f.name)}${f.fav===fam?`<small>Favourite!</small>`:""}</button>`).join("")}</div>`;
+}
+function careFeed(id){
+  const p=carePet(), f=CFOODS.find(x=>x.id===id), fav=f.fav===byId(C.fav).f;
+  if (p.food>=96){ careSay("I'm full! Maybe later."); careBounce("wiggle"); return; }
+  const fly=careFx("food", 50, 92, f.em); fly.style.setProperty("--dy","-46%");
+  setTimeout(()=>{
+    careBounce("munch");
+    for (let i=0;i<5;i++) careFx("crumb", 44+Math.random()*12, 50+Math.random()*8, "•");
+    careSay(fav ? ["Yum yum! My favourite!","Ooh, "+f.name+"! Thank you!"][Math.floor(Math.random()*2)] : ["Mmm, tasty!","Munch munch!","Thank you!"][Math.floor(Math.random()*3)]);
+    careGive("food", fav?35:22, fav?3:2);
+    if (fav) careFx("heart", 62, 30, "❤️");
+  }, 650);
+}
+
+/* ---------- Play: tickle (rub the creature) and catch the stars ---------- */
+var TICKLE = {down:false, x:0, y:0, dist:0, last:0};
+function carePlayPanel(){
+  return `<p class="chint">Rub ${esc(carePet().name)} to tickle them, or play a game.</p><button class="btn primary" id="cStarGo">Catch the stars</button>`;
+}
+function careStartGame(){
+  const p=carePet();
+  if (p.energy<10){ careSay("*yawn* Too sleepy to play..."); return; }
+  careEndGame(true);
+  CARE_GAME={caught:0, end:Date.now()+15000, spawn:0};
+  $("cGame").hidden=false; $("cPanel").hidden=true; careMode("");
+  careSay("Catch the falling stars! Tap them!", 2500);
+  const step=()=>{
+    if (!CARE_GAME) return;
+    const left=Math.ceil((CARE_GAME.end-Date.now())/1000);
+    $("cGameInfo").textContent=`⭐ ${CARE_GAME.caught}  ·  ${Math.max(0,left)}s`;
+    if (left<=0) return careEndGame(false);
+    if (Date.now()>CARE_GAME.spawn){
+      CARE_GAME.spawn=Date.now()+550+Math.random()*350;
+      const s=document.createElement("button"); s.className="cstar"; s.textContent="⭐"; s.setAttribute("aria-label","Catch the star");
+      s.style.left=(8+Math.random()*80)+"%"; s.style.animationDuration=(2.4+Math.random()*1.4)+"s";
+      s.addEventListener("pointerdown", e=>{ e.preventDefault(); e.stopPropagation(); if (!CARE_GAME) return; CARE_GAME.caught++; const r=s.getBoundingClientRect(), st=$("cStage").getBoundingClientRect(); careFx("spark",(r.left+r.width/2-st.left)/st.width*100,(r.top+r.height/2-st.top)/st.height*100,"✨"); careBounce("jump"); s.remove(); });
+      s.addEventListener("animationend", ()=>s.remove());
+      $("cStars").appendChild(s);
+    }
+    CARE_GAME.raf=requestAnimationFrame(step);
+  };
+  CARE_GAME.raf=requestAnimationFrame(step);
+}
+function careEndGame(quiet){
+  if (!CARE_GAME) { $("cStars") && ($("cStars").innerHTML=""); return; }
+  const g=CARE_GAME; CARE_GAME=null; cancelAnimationFrame(g.raf);
+  $("cStars").innerHTML=""; $("cGame").hidden=true;
+  if (quiet) return;
+  const p=carePet();
+  p.energy=clamp100(p.energy-6);
+  careSay(g.caught>=12 ? `Wow! ${g.caught} stars! That was the best game ever!` : g.caught ? `We caught ${g.caught} stars! Again, again!` : "Aww, no stars that time. Let's try again!", 4500);
+  careGive("fun", Math.min(45, 8+g.caught*3), Math.min(6, 1+Math.floor(g.caught/3)));
+}
+
+/* ---------- Clean: scrub the mud spots ---------- */
+function careDirt(){
+  const p=carePet(), n=Math.round((100-p.clean)/14), r=rng((C.fav.charCodeAt(1)||1)*97 + n), B=careBody();
+  $("cDirt").innerHTML = Array.from({length:n},(_,i)=>`<span class="cmud" data-hp="100" style="left:${B.l+B.w*(.18+r()*.64)}%;top:${B.t+B.h*(.2+r()*.6)}%;--s:${0.8+r()*0.5}"></span>`).join("");
+}
+function careCleanPanel(){ return `<p class="chint">Rub the mud spots with the sponge to scrub them off!</p><button class="btn primary" id="cCleanDone">All done</button>`; }
+function careScrub(x, y, moved){
+  const spots=[...$("cDirt").children]; if (!spots.length) return;
+  for (const s of spots){
+    const r=s.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+    if (Math.hypot(x-cx,y-cy) > r.width*0.8) continue;
+    const hp=+s.dataset.hp - moved*0.9; s.dataset.hp=hp; s.style.opacity=Math.max(0,hp/100);
+    if (Math.random()<0.35){ const st=$("cStage").getBoundingClientRect(); careFx("bubble",(x-st.left)/st.width*100,(y-st.top)/st.height*100,""); }
+    if (hp<=0){ s.remove(); const p=carePet(); p.clean=clamp100(p.clean+14); p.love+=1;
+      if (!$("cDirt").children.length){ p.clean=100; careSay("Squeaky clean! Thank you!"); careBounce("wiggle"); for (let i=0;i<6;i++) setTimeout(()=>careFx("spark",20+Math.random()*60,25+Math.random()*50,"✨"),i*80); }
+      careGive(null,0,0); }
+  }
+}
+
+/* ---------- Dress up ---------- */
+function careDressPanel(){
+  const p=carePet(), lv=careLevel(p);
+  return `<p class="chint">Friendship level ${lv}. Care for ${esc(p.name)} to unlock more.</p><div class="caccs"><button class="caccb" data-acc="" aria-pressed="${!p.acc}">None</button>${CACC.map(a=>lv>=a.lvl
+    ? `<button class="caccb" data-acc="${a.id}" aria-pressed="${p.acc===a.id}"><span class="mini" aria-hidden="true">${ACC_SVG[a.id]}</span>${a.name}</button>`
+    : `<button class="caccb locked" disabled><span aria-hidden="true">\u{1F512}</span> ${a.name}<small>Level ${a.lvl}</small></button>`).join("")}</div>`;
+}
+var ACC_AR = {bow:.5, flower:1/3, hat:.8, scarf:.5, specs:44/120, crown:.6};
+function careAccDraw(){
+  const p=carePet(), a=CACC.find(x=>x.id===p.acc); if (!a){ $("cAcc").innerHTML=""; return; }
+  const B=careBody(), cx=B.l+B.w/2;
+  let w, top;
+  if (a.at==="head"){ w=Math.max(24,Math.min(46,B.w*.55)); top=B.t - w*ACC_AR[a.id]*(a.id==="bow"?.45:.7); }
+  else if (a.at==="face"){ w=Math.max(26,Math.min(52,B.w*.6)); top=B.t+B.h*.24; }
+  else { w=Math.max(30,Math.min(66,B.w*.8)); top=B.t+B.h*.56; }
+  $("cAcc").innerHTML = `<span style="left:${cx}%;top:${top}%;width:${w}%">${ACC_SVG[a.id]}</span>`;
+}
+
+/* ---------- Actions ---------- */
+function careMode(m){
+  CARE_MODE=m; $("cStage").classList.toggle("scrub", m==="clean");
+  $("cSponge").hidden = m!=="clean";
+  document.querySelectorAll(".cact").forEach(b=>b.setAttribute("aria-pressed", b.dataset.act===m || (m==="" && false)));
+}
+function careAction(a){
+  const p=carePet();
+  if (a==="sleep"){
+    p.sleep=!p.sleep; careMode(""); $("cPanel").hidden=true; careEndGame(true);
+    careSay(p.sleep ? `Goodnight, ${p.name}. Sweet dreams!` : `Good morning, ${p.name}!`);
+    if (!p.sleep) careBounce("jump");
+    careSave(); careDraw(); return;
+  }
+  if (CARE_MODE===a && !$("cPanel").hidden){ careMode(""); $("cPanel").hidden=true; return; }
+  careMode(a); careEndGame(true);
+  const panel = a==="feed" ? careFeedPanel() : a==="play" ? carePlayPanel() : a==="clean" ? careCleanPanel() : careDressPanel();
+  $("cPanel").innerHTML=panel; $("cPanel").hidden=false;
+  if (a==="clean" && !$("cDirt").children.length) careSay("I'm already clean! But I like bubbles.");
+}
+
+$("cActs").addEventListener("click", e=>{ const b=e.target.closest(".cact"); if (b && !b.disabled) careAction(b.dataset.act); });
+$("cPanel").addEventListener("click", e=>{
+  const f=e.target.closest("[data-food]"); if (f) return careFeed(f.dataset.food);
+  if (e.target.closest("#cStarGo")) return careStartGame();
+  if (e.target.closest("#cCleanDone")){ careMode(""); $("cPanel").hidden=true; return; }
+  const ac=e.target.closest("[data-acc]");
+  if (ac){ const p=carePet(); p.acc=ac.dataset.acc||null; careSave(); careAccDraw(); $("cPanel").innerHTML=careDressPanel(); if (p.acc){ careBounce("wiggle"); careSay(["Do I look fancy?","I love it!","Ta-da!"][Math.floor(Math.random()*3)]); } }
+});
+$("cStage").addEventListener("pointerdown", e=>{
+  if (CARE_GAME || carePet()?.sleep) return;
+  TICKLE.down=true; TICKLE.x=e.clientX; TICKLE.y=e.clientY; TICKLE.dist=0;
+  try{ $("cStage").setPointerCapture(e.pointerId); }catch(_){}
+  if (CARE_MODE==="clean") careSponge(e);
+});
+$("cStage").addEventListener("pointermove", e=>{
+  if (CARE_MODE==="clean") careSponge(e);
+  if (!TICKLE.down) return;
+  const d=Math.hypot(e.clientX-TICKLE.x, e.clientY-TICKLE.y); TICKLE.x=e.clientX; TICKLE.y=e.clientY;
+  if (CARE_MODE==="clean"){ careScrub(e.clientX, e.clientY, d); return; }
+  const r=$("cPet").getBoundingClientRect();
+  if (e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom) return;
+  TICKLE.dist+=d;
+  if (TICKLE.dist>140){
+    TICKLE.dist=0; careBounce("wiggle");
+    const st=$("cStage").getBoundingClientRect();
+    careFx("heart",(e.clientX-st.left)/st.width*100,(e.clientY-st.top)/st.height*100,"❤️");
+    if (Date.now()-TICKLE.last>1200){ TICKLE.last=Date.now(); careSay(["Hee hee hee!","That tickles!","Ha ha! Stop! No, don't stop!","Giggle giggle!"][Math.floor(Math.random()*4)], 1600); }
+    careGive("fun", 4, 1);
+  }
+});
+for (const ev of ["pointerup","pointercancel"]) $("cStage").addEventListener(ev, ()=>{ TICKLE.down=false; });
+function careSponge(e){ const st=$("cStage").getBoundingClientRect(), s=$("cSponge"); s.style.left=(e.clientX-st.left)+"px"; s.style.top=(e.clientY-st.top)+"px"; }
+$("cName").addEventListener("input", ()=>{ const p=carePet(); if (!p) return; p.name=$("cName").value.trim().slice(0,14) || byId(C.fav).name; $("cTitle").textContent=p.name; careSave(); });
+$("cSwap").addEventListener("click", ()=>{ careEndGame(true); careMode(""); $("cPanel").hidden=true; carePick(); });
+$("cPickCancel").addEventListener("click", ()=>careShown());
+$("cPickCards").addEventListener("click", e=>{
+  const b=e.target.closest("button.card"); if (!b) return;
+  const id=b.dataset.id; C.fav=id; if (!C.pets[id]) C.pets[id]=careNewPet(id);
+  careSave(); careShown();
+  careSay(`Hello! I'm ${C.pets[id].name}. Will you look after me?`, 4500);
+});
+$("cBack").addEventListener("click", ()=>{ careSave(); careHide(); showScreen(CARE_FROM); });
+$("modeCare").addEventListener("click", ()=>{ CARE_FROM="mode"; showScreen("care"); });
+$("qCareBtn").addEventListener("click", ()=>{ if (QS!=="walk") return; CARE_FROM="quest"; qSave(); showScreen("care"); });
 
 /* ---------- Starfield ---------- */
 (function(){

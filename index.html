@@ -295,6 +295,9 @@ body{background-color:var(--night);background-image:
 .qwrap{position:relative;height:clamp(380px,74vh,720px);border-radius:18px;overflow:hidden;border:2px solid var(--mat-line);background:#0c1028;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 0 40px -12px rgba(120,140,255,.5)}
 #qCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .qhud{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none;z-index:2}
+.qleft{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;flex:1 1 auto}
+.qgoal{font-size:13px;font-weight:600;color:var(--gold);border-color:rgba(242,193,78,.5);max-width:min(100%,420px)}
+#qCanvas{cursor:pointer}
 .qright{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .qchip{pointer-events:auto;background:rgba(12,16,40,.84);border:1px solid var(--mat-line);border-radius:999px;padding:4px 12px;font-weight:700;font-size:14px;color:var(--ink);line-height:1.5}
 .qbtn{cursor:pointer}.qbtn:hover{border-color:var(--gold)}
@@ -348,6 +351,7 @@ body{background-color:var(--night);background-image:
 .qslot .card.mini:hover{opacity:1}
 .qslot small{color:var(--dim);font-size:12px}
 .qhint{margin:0;color:var(--dim);text-align:center;font-size:14px}
+@media (max-width:520px){.qchip{font-size:12px;padding:3px 10px}.qgoal{max-width:62vw}}
 </style>
 </head>
 <body>
@@ -441,7 +445,7 @@ body{background-color:var(--night);background-image:
     <div class="qwrap" id="qWrap">
       <canvas id="qCanvas" role="img" aria-label="The adventure map"></canvas>
       <div class="qhud">
-        <span class="qchip" id="qZone">Adventure</span>
+        <span class="qleft"><span class="qchip" id="qZone">Adventure</span><span class="qchip qgoal" id="qGoal"></span></span>
         <span class="qright"><span class="qchip qshards" id="qShards"></span><button class="qchip qbtn" id="qPackBtn">Pack<b id="qCards"></b></button><button class="qchip qbtn" id="qMenu">Menu</button></span>
       </div>
       <div class="qbanner" id="qBanner" aria-live="polite"></div>
@@ -1563,7 +1567,7 @@ function qDraw(now){
   let camX=(px+.5)*t-W/2, camY=(py+.5)*t-H/2;
   camX = QW*t<=W ? (QW*t-W)/2 : Math.max(0,Math.min(QW*t-W,camX));
   camY = QH*t<=H ? (QH*t-H)/2 : Math.max(0,Math.min(QH*t-H,camY));
-  camX=Math.round(camX); camY=Math.round(camY);
+  camX=Math.round(camX); camY=Math.round(camY); QCAM.x=camX; QCAM.y=camY;
   const x0=Math.max(0,Math.floor(camX/t)), y0=Math.max(0,Math.floor(camY/t)), x1=Math.min(QW-1,Math.ceil((camX+W)/t)), y1=Math.min(QH-1,Math.ceil((camY+H)/t));
   for (let y=y0;y<=y1;y++) for (let x=x0;x<=x1;x++){
     const ch=QMAP[y][x], def=TILEDEF[ch]||[ZONEBASE[qZone(x,y)], ch==="i"?"sign":null];
@@ -1581,6 +1585,27 @@ function qDraw(now){
     if (sx<-t*2||sy<-t*2||sx>W+t||sy>H+t) continue;
     if (a.me) drawPlayer(c,sx,sy,t,!!QP.mv,now); else drawNpc(c,a.n,sx,sy,t,now);
   }
+  if (QPATH && QPATH.mark){ const [mx,my]=QPATH.mark; c.beginPath(); c.ellipse(mx*t-camX+t/2,my*t-camY+t*.8,t*.3,t*.1,0,0,Math.PI*2); c.strokeStyle=`rgba(242,193,78,${.5+.4*Math.sin(now/150)})`; c.lineWidth=t*.05; c.stroke(); }
+  if (QS==="walk" && !QP.mv && !QPATH){
+    const [dx,dy]=DIRV[QP.dir], fx=QP.x+dx, fy=QP.y+dy;
+    if (qCanAct(fx,fy)) promptBubble(c, fx*t-camX+t/2, fy*t-camY-(npcAt(fx,fy)?t*.62:t*.1), t, now);
+  }
+}
+const TOUCH = (()=>{ try{ return matchMedia("(pointer:coarse)").matches; }catch(e){ return false; } })();
+function promptBubble(c,x,y,t,now){
+  const label = TOUCH ? "A" : "Space", fs=Math.round(t*.26);
+  c.font=`bold ${fs}px "Lilita One","Arial Rounded MT Bold",sans-serif`;
+  const w=Math.max(t*.42, c.measureText(label).width+t*.26), h=t*.4, yy=y+Math.sin(now/220)*t*.04;
+  c.beginPath(); c.roundRect ? c.roundRect(x-w/2,yy-h/2,w,h,h/2) : c.rect(x-w/2,yy-h/2,w,h);
+  c.fillStyle="#f2c14e"; c.fill(); c.lineWidth=t*.04; c.strokeStyle="#2a2108"; c.stroke();
+  c.fillStyle="#2a2108"; c.textAlign="center"; c.textBaseline="middle"; c.fillText(label,x,yy+1);
+}
+const QCAM={x:0,y:0};
+let QPATH=null;
+function qCanAct(x,y){
+  if (npcAt(x,y)) return true;
+  const t=tileAt(x,y);
+  return t==="i" || t==="S" || ("BFG".includes(t) && !gateOpen(t));
 }
 function drawGate(c,x,y,t,now){
   const open=gateOpen("G");
@@ -1597,15 +1622,44 @@ function qLoop(now){
   if (QP.mv && now-QP.mv.t0>=STEP){ QP.mv=null; qArrive(); }
   for (const n of QN) if (n.mv && now-n.mv.t0>=STEP){ const done=n.mv.done; n.mv=null; done&&done(); }
   if (!QP.mv && QS==="walk" && HELD) qTryMove(HELD, now);
+  else if (!QP.mv && QS==="walk" && QPATH){
+    if (QPATH.steps.length){ if (!qTryMove(QPATH.steps.shift(), now)) QPATH=null; }
+    else { const a=QPATH.act; QPATH=null; if (a){ QP.dir=a.dir; qAct(); } }
+  }
+  else if (QS!=="walk" && QPATH) QPATH=null;
   qDraw(now);
   Q_RAF=requestAnimationFrame(qLoop);
 }
-function qTryMove(dir, now){
-  if (QS!=="walk" || QP.mv) return;
+function qTryMove(dir, now, fresh){
+  if (QS!=="walk" || QP.mv) return false;
   QP.dir=dir; const [dx,dy]=DIRV[dir], x=QP.x+dx, y=QP.y+dy;
-  if (!passable(x,y) || npcAt(x,y)) return;
+  if (!passable(x,y) || npcAt(x,y)){ if (fresh && qCanAct(x,y)) qAct(); return false; }   // walk into someone to talk to them
   QP.mv={fx:QP.x, fy:QP.y, t0:now??performance.now()}; QP.x=x; QP.y=y;
   if (reduceMotion) QP.mv.t0-=STEP*0.6;
+  return true;
+}
+/* Tap the map to walk there. Tap a character, sign or gate to walk up to it and talk. */
+function qPathTo(tx,ty){
+  const free=(x,y)=>passable(x,y) && !npcAt(x,y);
+  const wantAct = !free(tx,ty) && qCanAct(tx,ty);
+  if (!free(tx,ty) && !wantAct) return null;
+  const goal = wantAct ? (x,y)=>Math.abs(x-tx)+Math.abs(y-ty)===1 : (x,y)=>x===tx && y===ty;
+  const key=(x,y)=>y*QW+x, prev=new Map([[key(QP.x,QP.y),null]]), queue=[[QP.x,QP.y]];
+  while (queue.length){
+    const [x,y]=queue.shift();
+    if (goal(x,y)){
+      const steps=[]; let k=key(x,y);
+      while (prev.get(k)){ const [d,pk]=prev.get(k); steps.unshift(d); k=pk; }
+      const act = wantAct ? {dir: tx>x?"right":tx<x?"left":ty>y?"down":"up"} : null;
+      return {steps, act, mark: wantAct?null:[tx,ty]};
+    }
+    for (const d of ["up","down","left","right"]){
+      const [dx,dy]=DIRV[d], nx=x+dx, ny=y+dy, nk=key(nx,ny);
+      if (prev.has(nk) || !free(nx,ny)) continue;
+      prev.set(nk,[d,key(x,y)]); queue.push([nx,ny]);
+    }
+  }
+  return null;
 }
 function qArrive(){
   const z=qZone(QP.x,QP.y);
@@ -1629,7 +1683,7 @@ function qCheckSpot(){
 const wait = ms => new Promise(r=>setTimeout(r, reduceMotion?Math.min(ms,150):ms));
 function npcStep(n){ return new Promise(res=>{ const [dx,dy]=DIRV[n.rdir]; n.mv={fx:n.rx, fy:n.ry, t0:performance.now(), done:res}; n.rx+=dx; n.ry+=dy; }); }
 async function qSpotted(n, dist){
-  QS="busy"; HELD=null;
+  QS="busy"; HELD=null; QPATH=null;
   n.bang=true; await wait(750); n.bang=false;
   for (let i=1;i<dist;i++) await npcStep(n);
   QP.dir=OPPOSITE[n.rdir];
@@ -1779,7 +1833,7 @@ async function qAct(){
   QS="busy";
   if (t==="i") await talk(null, [QSIGN[key]||"The sign is too worn to read."]);
   else if (t==="S"){ const s=QPLINTH[key]; await talk(null, [Q.flags[s] ? `The ${SHARD_NAME[s]} glows here.` : `An empty plinth. It's waiting for the ${SHARD_NAME[s]}.`]); }
-  else if (t==="B" && !gateOpen("B")) await talk(null, ["A pile of sleepy Boulders blocks the way.", "\"Beat the Old Oak first,\" they grumble, and go back to sleep."]);
+  else if (t==="B" && !gateOpen("B")) await talk(null, ["A pile of sleepy Boulders blocks the way.", "\"Beat the Old Oak first,\" they grumble. \"They're in the clearing north of the forest.\""]);
   else if (t==="F" && !gateOpen("F")) await talk(null, ["A Metal fence. The sign on it says: Beat Rockawell, champion of the Boulders, first."]);
   else if (t==="G" && !gateOpen("G")) await talk(null, ["A star gate with three empty sockets.", "It needs the Metal shard from Cog-a-lin."]);
   else if (t==="w") await talk(null, ["The water sparkles with starlight."]);
@@ -1791,6 +1845,12 @@ function qHud(){
   $("qShards").innerHTML=["forest","rock","metal"].map(s=>`<span class="${Q.flags[s]?"got":""}" style="--c:${SHARD_COL[s]}" title="${SHARD_NAME[s]}${Q.flags[s]?"":" (not yet)"}">★</span>`).join("");
   $("qShards").setAttribute("aria-label", `Shards: ${["forest","rock","metal"].filter(s=>Q.flags[s]).length} of 3`);
   $("qCards").textContent=`${Q.owned.length}/${CATALOG.length}`;
+  const f=Q.flags;
+  $("qGoal").textContent = !f.forest ? "Goal: beat the Old Oak in the north clearing"
+    : !f.rock ? "Goal: go east and beat Rockawell"
+    : !f.metal ? "Goal: go north and beat Cog-a-lin"
+    : !f.gk ? "Goal: go west through the star gate"
+    : `Goal: collect all ${CATALOG.length} cards`;
 }
 function questShown(){
   qResize();
@@ -1815,18 +1875,18 @@ async function qBegin(fresh){
   if (fresh){ Q=qFresh(); try{ localStorage.removeItem(QKEY); }catch(e){} }
   else Q=qLoad()||qFresh();
   qReset(); QP.x=Q.x; QP.y=Q.y; QP.dir=Q.dir; QP.mv=null;
-  $("qTitle").hidden=true; qHud(); Q_ZONE=""; qArrive();
+  $("qTitle").hidden=true; $("qWrap").classList.remove("talking"); QPATH=null; qHud(); Q_ZONE=""; qArrive();
   if (!Q.intro){
     QS="busy";
     await talk("A voice from the stars", ["Traveller... can you hear me?",
       "Long ago, the families of Wood, Rock and Metal began the Endless Games. Whoever wins, plays for the universe.",
       "Beat the champion of each family and win their star shards. Then come and find me in the Observatory."]);
     Q.intro=true; qSave();
-    await talk(null, ["You got a pack of 15 cards!", "Walk with the arrows, and talk to people with the A button. Check your cards any time with Pack."]);
+    await talk(null, ["You got a pack of 15 cards!", TOUCH ? "Walk with the arrows, or tap where you want to go. To talk to someone, walk into them or tap them." : "Walk with the arrow keys, or click where you want to go. To talk to someone, walk into them or click them."]);
   }
   QS="walk";
 }
-function qLeave(){ if (Q && QS!=="title") qSave(); QS="off"; HELD=null; $("qDlg").hidden=true; DLG=null; showScreen("mode"); }
+function qLeave(){ if (Q && QS!=="title") qSave(); QS="off"; HELD=null; QPATH=null; $("qDlg").hidden=true; $("qOpts").innerHTML=""; $("qWrap").classList.remove("talking"); DLG=null; showScreen("mode"); }
 
 /* ---------- Controls ---------- */
 const KEYDIR = {ArrowUp:"up", ArrowDown:"down", ArrowLeft:"left", ArrowRight:"right", w:"up", s:"down", a:"left", d:"right", W:"up", S:"down", A:"left", D:"right"};
@@ -1836,15 +1896,23 @@ document.addEventListener("keydown", e=>{
   if (!$("qReward").hidden) return;
   if (DLG && DLG.ask) return;
   const d=KEYDIR[e.key];
-  if (d){ e.preventDefault(); HELD=d; qTryMove(d); return; }
+  if (d){ e.preventDefault(); QPATH=null; if (e.repeat && HELD===d) return; HELD=d; qTryMove(d, undefined, true); return; }
   if (e.key===" "||e.key==="Enter"||e.key==="z"||e.key==="Z"){ if (e.target.closest && e.target.closest("button") && QS!=="talk") return; e.preventDefault(); if (!e.repeat) qAct(); }
   else if (e.key==="p"||e.key==="P"){ e.preventDefault(); qPackOpen(); }
 });
 document.addEventListener("keyup", e=>{ const d=KEYDIR[e.key]; if (d && HELD===d) HELD=null; });
 window.addEventListener("blur", ()=>{ HELD=null; });
 window.addEventListener("resize", ()=>{ if (!$("screenQuest").hidden) qResize(); });
-$("qDpad").addEventListener("pointerdown", e=>{ const b=e.target.closest("[data-dir]"); if (!b) return; e.preventDefault(); HELD=b.dataset.dir; qTryMove(HELD); try{ b.setPointerCapture(e.pointerId); }catch(_){} });
+$("qDpad").addEventListener("pointerdown", e=>{ const b=e.target.closest("[data-dir]"); if (!b) return; e.preventDefault(); QPATH=null; HELD=b.dataset.dir; qTryMove(HELD, undefined, true); try{ b.setPointerCapture(e.pointerId); }catch(_){} });
 for (const ev of ["pointerup","pointercancel","lostpointercapture"]) $("qDpad").addEventListener(ev, ()=>{ HELD=null; });
+$("qCanvas").addEventListener("pointerdown", e=>{
+  if (QS==="talk"){ dlgNext(); return; }
+  if (QS!=="walk") return;
+  const r=$("qCanvas").getBoundingClientRect(), tx=Math.floor((e.clientX-r.left+QCAM.x)/QT), ty=Math.floor((e.clientY-r.top+QCAM.y)/QT);
+  if (tx===QP.x && ty===QP.y) return;
+  if (Math.abs(tx-QP.x)+Math.abs(ty-QP.y)===1 && qCanAct(tx,ty)){ QPATH=null; QP.dir = tx>QP.x?"right":tx<QP.x?"left":ty>QP.y?"down":"up"; qAct(); return; }
+  QPATH = qPathTo(tx,ty);
+});
 $("qA").addEventListener("pointerdown", e=>{ e.preventDefault(); qAct(); });
 $("qDlg").addEventListener("click", e=>{ if (e.target.closest("[data-yn]")) return; dlgNext(); });
 $("qPackBtn").addEventListener("click", qPackOpen);

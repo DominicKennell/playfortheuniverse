@@ -353,6 +353,16 @@ body{background-color:var(--night);background-image:
 .qslot small{color:var(--dim);font-size:12px}
 .qhint{margin:0;color:var(--dim);text-align:center;font-size:14px}
 @media (max-width:520px){.qchip{font-size:12px;padding:3px 10px}.qgoal{max-width:62vw}}
+/* ---------- Shiny cards ---------- */
+.card.shiny{border-color:transparent;border-width:calc(var(--cw)*.065);box-shadow:0 0 calc(var(--cw)*.12) rgba(255,200,240,.55),0 3px 0 #0006;background:linear-gradient(135deg,#fff3fa,#fffbe6 30%,#ecfff6 60%,#eef4ff) padding-box,linear-gradient(120deg,#ff9ad5,#ffe17a,#8ff0c9,#8ec5ff,#c9a2ff,#ff9ad5) border-box;background-size:auto,300% 300%;animation:holo 4s linear infinite}
+@keyframes holo{to{background-position:0 0,300% 0}}
+.card.shiny::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.75) 45%,rgba(255,215,250,.35) 50%,transparent 60%);background-size:250% 100%;animation:glint 3s ease-in-out infinite}
+@keyframes glint{0%{background-position:150% 0}60%,100%{background-position:-60% 0}}
+.card .shinytag{position:absolute;top:-.55em;right:-.45em;font-size:2.1em;line-height:1;color:#f2c14e;text-shadow:0 0 6px #fff,0 1px 0 #2b2833;z-index:2}
+.shinyword{color:#ff9ad5;font-weight:700}
+.qtapnote{width:100%;text-align:center;color:var(--dim);margin:0}
+@media (prefers-reduced-motion:reduce){.card.shiny,.card.shiny::after{animation:none}}
+@media (max-width:560px){.qpicks{gap:8px;flex-wrap:nowrap}.qpick{max-width:32%;min-width:0}.qpick .card{--cw:clamp(78px,27vw,130px)}.qpick small{font-size:11px}}
 /* ---------- Care corner ---------- */
 .cheadbtns{display:flex;gap:8px;flex-wrap:wrap}
 .cgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start}
@@ -721,7 +731,8 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const shuffle = a => { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
 const label = c => `${c.name} (${FAM[c.f].name} ${c.v})`;
-const byId = id => CATALOG.find(c=>c.id===id);
+/* A shiny card has the same id with a star on the end, e.g. "W3b*". It plays exactly like the plain one. */
+const byId = id => { if (typeof id==="string" && id.endsWith("*")){ const c=CATALOG.find(x=>x.id===id.slice(0,-1)); return c ? {...c, id, shiny:true} : undefined; } return CATALOG.find(c=>c.id===id); };
 
 /* ---------- Your pack choice (saved in this browser) ---------- */
 function loadChoice(){ try{ const c=JSON.parse(localStorage.getItem("pftu-pack")); if(c && SLOTS.every(s=>OPTIONS[s].some(o=>o.id===c[s]))) return c; }catch(e){} return {...BASE}; }
@@ -1078,9 +1089,9 @@ function cardHTML(c, opt={}){
   const fam=FAM[c.f];
   const chip = c.ab ? `<span class="chip">${c.ab}</span>` : `<span class="chip none">Mightiest</span>`;
   const inner = `<span class="top"><span class="val">${c.v}</span><span class="fam">${fam.name}</span></span>
-    <span class="art"><img src="${c.art}" alt="${esc(c.name)}"></span><span class="name">${esc(c.name)}</span>${chip}`;
-  const cls=`card ${fam.cls} ${opt.mini?"mini":""} ${opt.extra||""}`;
-  if (opt.button) return `<button class="${cls} ${opt.sel?"sel":""}" data-id="${c.uid}" ${opt.disabled?"disabled":""} aria-pressed="${!!opt.sel}" aria-label="${esc(label(c))}${c.ab?", "+c.ab:""}">${inner}</button>`;
+    <span class="art"><img src="${c.art}" alt="${esc(c.name)}"></span><span class="name">${esc(c.name)}</span>${chip}${c.shiny?`<span class="shinytag" aria-hidden="true">\u2726</span>`:""}`;
+  const cls=`card ${fam.cls} ${opt.mini?"mini":""} ${opt.extra||""} ${c.shiny?"shiny":""}`;
+  if (opt.button) return `<button class="${cls} ${opt.sel?"sel":""}" data-id="${c.uid}" ${opt.disabled?"disabled":""} aria-pressed="${!!opt.sel}" aria-label="${c.shiny?"Shiny ":""}${esc(label(c))}${c.ab?", "+c.ab:""}">${inner}</button>`;
   return `<span class="${cls}" aria-label="${esc(label(c))}">${inner}</span>`;
 }
 const backHTML = () => `<div class="back" aria-hidden="true">${BACK}</div>`;
@@ -1499,6 +1510,19 @@ const QNPC = [
    hi:["Whirr. I am Cog-a-lin, champion of Metal.", "Metal beats Wood. And I beat everyone. Prove me wrong."],
    lose:["Gears... grinding... The Metal shard is yours.", "The star gate in the west is waiting for you."],
    win:["Whirr. Click. Victory. Come back when you're ready."], again:"The Metal shard is yours already. Play again?"},
+  /* Secret creatures: invisible until you come close. */
+  {id:"stickily", name:"Stickily", card:"W1c", x:2, y:15, dir:"down", sight:0, level:"normal", abil:true, secret:true, deck:{W:"d3",R:"d2",M:"d3"},
+   hi:["...!", "You found me! I'm Stickily. I hide in the shadows.", "Nobody ever finds me. Fancy a secret game?"],
+   lose:["You're good at finding AND playing! Pick a shiny card."], win:["Back into the shadows I go... Come and find me again."], again:"Another secret game?"},
+  {id:"brock", name:"Brock", card:"R5d", x:38, y:16, dir:"left", sight:0, level:"normal", abil:true, secret:true, deck:{W:"d2",R:"d3",M:"d4"},
+   hi:["Oi! This is my secret rock.", "I'm Brock. I Scatter trophies like pebbles. Let's play!"],
+   lose:["Smashing game! Pick a shiny card."], win:["Scattered! Come back for a rematch."], again:"Back for another secret game?"},
+  {id:"metalia", name:"Metalia", card:"M5c", x:38, y:1, dir:"down", sight:0, level:"hard", abil:true, secret:true, deck:{W:"d4",R:"d4",M:"d3"},
+   hi:["Shhh! I'm hiding from Cog-a-lin.", "I'm Metalia. Since you found me, let's play a secret game."],
+   lose:["Clever traveller. Pick a shiny card."], win:["Shhh... I win. Don't tell Cog-a-lin!"], again:"A quiet game in the corner?"},
+  {id:"mattalie", name:"Mattalie", card:"M1c", x:1, y:11, dir:"right", sight:0, level:"hard", abil:true, secret:true, deck:{W:"d3",R:"d4",M:"d3"},
+   hi:["Oh! I was counting the stars.", "I'm Mattalie. Only the cleverest travellers find me here."],
+   lose:["A star player! Pick a shiny card."], win:["The stars were on my side. Try again?"], again:"Count the stars with me again?"},
   {id:"gk", name:"The Gamekeeper", card:null, x:9, y:3, dir:"down", sight:0, level:"hard", abil:true, final:true, deck:"random",
    hi:["So. You carry all three shards.",
        "I am the Gamekeeper. I have kept the Endless Games since before the stars were lit.",
@@ -1513,6 +1537,12 @@ const QSIGN = {
   "31,13":"The Metal Works. Mind the gears! West: the star gate.",
   "16,7":"The Observatory. Three shards light the way to the Gamekeeper."
 };
+/* Hidden treasures: a faint sparkle every few seconds. Step on one to find it. */
+const QFIND = [
+  {id:"f1", x:4, y:15, kind:"shiny"}, {id:"f2", x:8, y:26, kind:"card"}, {id:"f3", x:16, y:25, kind:"shiny"},
+  {id:"f4", x:30, y:26, kind:"shiny"}, {id:"f5", x:37, y:27, kind:"card"},
+  {id:"f6", x:36, y:7, kind:"shiny"}, {id:"f7", x:21, y:12, kind:"card"},
+  {id:"f8", x:1, y:1, kind:"shiny"}].map((f,i)=>({...f, ph:i*0.83}));
 const QPLINTH = {"4,4":"forest", "14,4":"rock", "9,8":"metal"};
 const SHARD_NAME = {forest:"Forest shard", rock:"Boulder shard", metal:"Metal shard"};
 const SHARD_COL = {forest:"#9ccc4a", rock:"#c2b6a9", metal:"#58b8ea"};
@@ -1520,7 +1550,7 @@ const SHARD_COL = {forest:"#9ccc4a", rock:"#c2b6a9", metal:"#58b8ea"};
 /* ---------- Saving ---------- */
 const QKEY = "pftu-adventure";
 let Q = null;                 // saved progress
-function qFresh(){ return {v:1, x:QSTART.x, y:QSTART.y, dir:QSTART.dir, owned:SLOTS.map(s=>BASE[s]), pack:{...BASE}, beaten:{}, flags:{}, intro:false}; }
+function qFresh(){ return {v:1, x:QSTART.x, y:QSTART.y, dir:QSTART.dir, owned:SLOTS.map(s=>BASE[s]), pack:{...BASE}, beaten:{}, flags:{}, found:{}, seen:{}, intro:false}; }
 function qLoad(){ try{ const q=JSON.parse(localStorage.getItem(QKEY)); if (q && q.v===1 && Array.isArray(q.owned)) return q; }catch(e){} return null; }
 function qSave(){
   if (!Q) return;
@@ -1665,6 +1695,7 @@ function drawNpc(c, n, x, y, t, now){
       c.globalCompositeOperation="multiply"; c.drawImage(im,(t-w)/2,t*.36-h/2,w,h); c.globalCompositeOperation="source-over";
     }
     if (Q.beaten[n.id]) star(c,t*.98,t*-.12,t*.13,"#f2c14e");
+    if (n.secret){ const k=.5+.5*Math.sin(now/260+n.x); c.globalAlpha=k; star(c,t*.02,t*.02,t*.09,"#fff6c2"); star(c,t*.9,t*.7,t*.07,"#fff6c2"); c.globalAlpha=1; }
   }
   if (n.bang){
     lump(c,t/2,-t*.52,t*.2,t*.22,rng(3),.1,"#ffffff","#2b2833",t*.04);
@@ -1710,7 +1741,16 @@ function qDraw(now){
     if (ch==="G") drawGate(c,sx,sy,t,now);
     if (ch==="S"){ const sh=QPLINTH[x+","+y]; if (Q.flags[sh]){ const g=c.createRadialGradient(sx+t/2,sy+t*.4,0,sx+t/2,sy+t*.4,t*.5); g.addColorStop(0,SHARD_COL[sh]+"cc"); g.addColorStop(1,SHARD_COL[sh]+"00"); c.fillStyle=g; c.fillRect(sx,sy-t*.2,t,t); star(c,sx+t/2,sy+t*.42+Math.sin(now/400)*t*.04,t*.17,SHARD_COL[sh]); } }
   }
-  const actors=[...QN.map(n=>({n, pos:lerpPos(n,now)})), {me:true, pos:[px,py]}];
+  for (const f of QFIND){
+    if (Q.found[f.id] || f.x<x0||f.x>x1||f.y<y0||f.y>y1) continue;
+    const near=Math.abs(f.x-QP.x)+Math.abs(f.y-QP.y)<=2, ph=(now/1000+f.ph)%3.2;
+    if (near || ph<0.7){
+      const k = near ? 0.75+0.25*Math.sin(now/180) : Math.sin(ph/0.7*Math.PI);
+      c.globalAlpha=Math.max(0,k); star(c,f.x*t-camX+t/2,f.y*t-camY+t*.45,t*(near?.17:.13)*(0.6+k*0.5),"#fff6c2");
+      star(c,f.x*t-camX+t*.72,f.y*t-camY+t*.25,t*.06*(0.6+k*0.5),"#ffffff"); c.globalAlpha=1;
+    }
+  }
+  const actors=[...QN.filter(n=>!n.secret || Q.seen[n.id]).map(n=>({n, pos:lerpPos(n,now)})), {me:true, pos:[px,py]}];
   const fid=careFavCached();
   if (fid && (QF.mv || QF.x!==QP.x || QF.y!==QP.y)) actors.push({fol:fid, pos:lerpPos(QF,now)});
   actors.sort((a,b)=>a.pos[1]-b.pos[1]);
@@ -1812,7 +1852,26 @@ function qArrive(){
   const z=qZone(QP.x,QP.y);
   if (z!==Q_ZONE){ Q_ZONE=z; qBanner(QZONES[z]); }
   if (performance.now()-Q_SAVE_T>1500){ Q_SAVE_T=performance.now(); qSave(); }
+  for (const n of QN) if (n.secret && !Q.seen[n.id] && Math.abs(n.rx-QP.x)+Math.abs(n.ry-QP.y)<=2){
+    Q.seen[n.id]=true; qSave(); n.bang=true; setTimeout(()=>{ n.bang=false; }, 900);
+  }
+  const f=QFIND.find(f=>f.x===QP.x && f.y===QP.y && !Q.found[f.id]);
+  if (f){ qFind(f); return; }
   qCheckSpot();
+}
+async function qFind(f){
+  QS="busy"; HELD=null; QPATH=null;
+  Q.found[f.id]=true;
+  const notShiny=Q.owned.filter(x=>!x.endsWith("*") && !Q.owned.includes(x+"*"));
+  let id=null;
+  if (f.kind==="shiny" && notShiny.length) id=shuffle(notShiny)[0]+"*";
+  if (!id) id=shuffle(CATALOG.map(c=>c.id).filter(x=>!Q.owned.includes(x)))[0]||null;
+  if (!id) id=shuffle(CATALOG.map(c=>c.id+"*").filter(x=>!Q.owned.includes(x)))[0]||null;
+  if (!id){ await talk(null,["A little star sparkles here... but you already have everything!"]); qSave(); QS="walk"; return; }
+  await talk(null,["Something is sparkling here..."]);
+  await qShowCards([id], byId(id).shiny ? "You found a shiny card!" : "You found a hidden card!");
+  await qGot(id);
+  qSave(); QS="walk";
 }
 function qBanner(text){ const b=$("qBanner"); b.textContent=text; b.classList.remove("show"); void b.offsetWidth; b.classList.add("show"); $("qZone").textContent=text; }
 
@@ -1913,7 +1972,7 @@ async function qEncounter(n, spotted){
     Q.beaten[n.id]=(Q.beaten[n.id]||0)+1;
     await talk(who, first ? n.lose : ["Good game! Take another card."]);
     const picks = first && (n.champ||n.final) ? 2 : 1;
-    for (let i=0;i<picks;i++) await qReward(i, picks);
+    for (let i=0;i<picks;i++) await qReward(i, picks, first && n.secret);
     if (first && n.champ){
       Q.flags[n.champ]=true; qSave(); qHud();
       await talk(null, [`You got the ${SHARD_NAME[n.champ]}!`,
@@ -1923,7 +1982,7 @@ async function qEncounter(n, spotted){
     }
     if (first && n.final){
       Q.flags.gk=true; qSave(); qHud();
-      await talk(null, ["You beat the Gamekeeper and won the universe!", "Keep exploring: rematch anyone to collect more cards. New planets are coming soon."]);
+      await talk(null, ["You beat the Gamekeeper and won the universe!", "Keep exploring: rematch anyone for more cards, hunt for sparkling treasures, and find the creatures who are hiding."]);
     }
   } else if (res==="ran") await talk(who, ["Running away? Come back when you're ready!"]);
   else if (res===-1) await talk(who, ["A tie! The Endless Games go on. Talk to me for another go."]);
@@ -1933,27 +1992,42 @@ async function qEncounter(n, spotted){
 }
 
 /* ---------- Rewards ---------- */
-function qReward(i, total){
-  const pool = QB_LAST && Object.values(QB_LAST).filter(id=>!Q.owned.includes(id));
-  let cands = shuffle([...new Set(pool||[])]);
-  if (cands.length<3) cands = cands.concat(shuffle(CATALOG.map(c=>c.id).filter(id=>!Q.owned.includes(id) && !cands.includes(id))));
+const shinyFree = ids => ids.filter(id=>!id.endsWith("*") && !Q.owned.includes(id+"*"));
+function qReward(i, total, shinyOnly){
+  const deck = QB_LAST ? [...new Set(Object.values(QB_LAST).map(x=>x.replace("*","")))] : [];
+  let cands;
+  if (shinyOnly){
+    cands = shuffle(shinyFree(deck)).map(x=>x+"*");
+    if (cands.length<3) cands = cands.concat(shuffle(shinyFree(CATALOG.map(c=>c.id))).map(x=>x+"*").filter(x=>!cands.includes(x)));
+  } else {
+    cands = shuffle(deck.filter(id=>!Q.owned.includes(id)));
+    if (cands.length<3) cands = cands.concat(shuffle(CATALOG.map(c=>c.id).filter(id=>!Q.owned.includes(id) && !cands.includes(id))));
+    const sh = shuffle(shinyFree(deck));
+    if (sh.length && Math.random()<1/6) cands.splice(Math.floor(Math.random()*Math.min(3,cands.length+1)),0,sh[0]+"*");   // the odd lucky shiny
+  }
   cands = cands.slice(0,3);
   if (!cands.length) return talk(null, ["You already own every card in the universe!"]);
+  const head = (shinyOnly ? "Pick a shiny card" : "Pick a card to keep") + (total>1 ? ` (${i+1} of ${total})` : "");
+  return qShowCards(cands, head).then(id=>qGot(id));
+}
+/* Show one or more cards; the player taps one to keep it. */
+function qShowCards(ids, head){
   return new Promise(res=>{
     QS="busy";
-    const ov=$("qReward"); ov.hidden=false;
-    $("qRewardHead").textContent = total>1 ? `Pick a card to keep (${i+1} of ${total})` : "Pick a card to keep";
-    $("qRewardCards").innerHTML = cands.map(id=>{ const c=byId(id); return `<div class="qpick">${cardHTML({...c,uid:id},{button:true})}<small>${c.ab?`<b>${c.ab}:</b> ${ABTEXT[c.ab]}`:esc(LORE[c.name]||"The mightiest of its family.")}</small></div>`; }).join("");
-    $("qRewardCards").onclick=async e=>{
-      const b=e.target.closest("button.card"); if (!b) return;
-      $("qRewardCards").onclick=null; ov.hidden=true;
-      const id=b.dataset.id, c=byId(id), slot=c.f+c.v, old=byId(Q.pack[slot]);
-      Q.owned.push(id); qSave(); qHud();
-      if (await askYN(null, `You got ${c.name}! Put it in your pack instead of ${old.name}?`, "Yes, use it", "Keep "+old.name)){ Q.pack[slot]=id; qSave(); }
-      res();
-    };
+    const ov=$("qReward"); ov.hidden=false; $("qRewardHead").textContent=head;
+    $("qRewardCards").innerHTML = ids.map(id=>{ const c=byId(id); return `<div class="qpick">${cardHTML({...c,uid:id},{button:true})}<small>${c.shiny?`<b class="shinyword">Shiny!</b> `:""}${c.ab?`<b>${c.ab}:</b> ${ABTEXT[c.ab]}`:esc(LORE[c.name]||"The mightiest of its family.")}</small></div>`; }).join("")
+      + (ids.length===1 ? `<p class="qtapnote">Tap the card to keep it.</p>` : "");
+    $("qRewardCards").onclick=e=>{ const b=e.target.closest("button.card"); if (!b) return; $("qRewardCards").onclick=null; ov.hidden=true; res(b.dataset.id); };
     setTimeout(()=>{ const f=$("qRewardCards").querySelector("button"); f&&f.focus(); }, 30);
   });
+}
+async function qGot(id){
+  const c=byId(id), slot=c.f+c.v, old=byId(Q.pack[slot]);
+  if (!Q.owned.includes(id)) Q.owned.push(id);
+  qSave(); qHud();
+  const what = c.shiny ? `a shiny ${c.name}` : c.name;
+  const instead = old.id===id.replace("*","") ? `your plain ${old.name}` : old.shiny ? `your shiny ${old.name}` : old.name;
+  if (await askYN(null, `You got ${what}! Put it in your pack instead of ${instead}?`, "Yes, use it", "Not now")){ Q.pack[slot]=id; qSave(); }
 }
 
 /* ---------- Your pack ---------- */
@@ -1963,10 +2037,13 @@ function qPackOpen(){
 }
 function qPackRender(){
   qPackValid();
-  $("qPackCount").textContent=`${Q.owned.length} of ${CATALOG.length} cards collected. Tap a card to put it in your pack.`;
+  const plain=Q.owned.filter(x=>!x.endsWith("*")).length, shiny=Q.owned.length-plain;
+  const secrets=QNPC.filter(n=>n.secret), seen=secrets.filter(n=>Q.seen[n.id]).length, found=QFIND.filter(f=>Q.found[f.id]).length;
+  $("qPackCount").innerHTML=`${plain} of ${CATALOG.length} cards \u00B7 <b class="shinyword">${shiny} shiny</b> \u00B7 ${found} of ${QFIND.length} hidden treasures \u00B7 ${seen} of ${secrets.length} secret creatures. Tap a card to put it in your pack.`;
   $("qPackBody").innerHTML=["W","R","M"].map(f=>`<div class="qfam"><h3 style="color:var(--${FAM[f].cls})">${FAM[f].name}</h3><div class="qslots">${
-    [1,2,3,4,5].map(v=>{ const s=f+v, own=OPTIONS[s].filter(o=>Q.owned.includes(o.id));
-      return `<div class="qslot">${own.map(o=>cardHTML({...o,uid:o.id},{button:true,mini:own.length>1&&Q.pack[s]!==o.id,sel:Q.pack[s]===o.id})).join("")}<small>${own.length} of ${OPTIONS[s].length}</small></div>`; }).join("")
+    [1,2,3,4,5].map(v=>{ const s=f+v, own=OPTIONS[s].flatMap(o=>[o.id,o.id+"*"]).filter(id=>Q.owned.includes(id)).map(byId);
+      const kinds=OPTIONS[s].filter(o=>Q.owned.includes(o.id)||Q.owned.includes(o.id+"*")).length, sh=own.filter(o=>o.shiny).length;
+      return `<div class="qslot">${own.map(o=>cardHTML({...o,uid:o.id},{button:true,mini:own.length>1&&Q.pack[s]!==o.id,sel:Q.pack[s]===o.id})).join("")}<small>${kinds} of ${OPTIONS[s].length}${sh?` \u00B7 ${sh}\u2726`:""}</small></div>`; }).join("")
   }</div></div>`).join("");
 }
 function qPackClose(){ $("qPack").hidden=true; qSave(); QS="walk"; }
@@ -1991,7 +2068,7 @@ async function qAct(){
 function qHud(){
   $("qShards").innerHTML=["forest","rock","metal"].map(s=>`<span class="${Q.flags[s]?"got":""}" style="--c:${SHARD_COL[s]}" title="${SHARD_NAME[s]}${Q.flags[s]?"":" (not yet)"}">★</span>`).join("");
   $("qShards").setAttribute("aria-label", `Shards: ${["forest","rock","metal"].filter(s=>Q.flags[s]).length} of 3`);
-  $("qCards").textContent=`${Q.owned.length}/${CATALOG.length}`;
+  const sh=Q.owned.filter(x=>x.endsWith("*")).length; $("qCards").textContent=`${Q.owned.length-sh}/${CATALOG.length}${sh?` \u2726${sh}`:""}`;
   const f=Q.flags;
   $("qGoal").textContent = !f.forest ? "Goal: beat the Old Oak in the north clearing"
     : !f.rock ? "Goal: go east and beat Rockawell"
@@ -2022,12 +2099,14 @@ async function qBegin(fresh){
   if (fresh){ Q=qFresh(); try{ localStorage.removeItem(QKEY); }catch(e){} }
   else Q=qLoad()||qFresh();
   qReset(); QP.x=Q.x; QP.y=Q.y; QP.dir=Q.dir; QP.mv=null; QF.x=QP.x; QF.y=QP.y; QF.mv=null;
+  Q.found=Q.found||{}; Q.seen=Q.seen||{};
   $("qTitle").hidden=true; $("qWrap").classList.remove("talking"); QPATH=null; qHud(); Q_ZONE=""; qArrive();
   if (!Q.intro){
     QS="busy";
     await talk("A voice from the stars", ["Traveller... can you hear me?",
       "Long ago, the families of Wood, Rock and Metal began the Endless Games. Whoever wins, plays for the universe.",
-      "Beat the champion of each family and win their star shards. Then come and find me in the Observatory."]);
+      "Beat the champion of each family and win their star shards. Then come and find me in the Observatory.",
+      "And keep your eyes open. Secrets sparkle in hidden places, and some creatures are very good at hiding."]);
     Q.intro=true; qSave();
     await talk(null, ["You got a pack of 15 cards!", touchOn() ? "Walk with the arrows, or tap where you want to go. To talk to someone, walk into them or tap them." : "Walk with the arrow keys, or click where you want to go. To talk to someone, walk into them or click them."]);
   }
@@ -2199,6 +2278,7 @@ function carePick(){
 function careTick(){
   const p=carePet(); if (!p || $("screenCare").hidden) return;
   careDecay(p);
+  if (byId(C.fav).shiny && !p.sleep && Math.random()<0.6){ const B=careBody(); careFx("spark", 19+(B.l+Math.random()*B.w)*0.62, 100-11-62+(B.t+Math.random()*B.h)*0.62, "\u2728"); }
   if (p.sleep && Date.now()-CARE_ZZZ>1400){ CARE_ZZZ=Date.now(); careFx("z", 58+Math.random()*10, 30, "Z"); }
   if (p.sleep && p.energy>=100){ p.sleep=false; careSay(`${p.name} wakes up, full of energy!`); }
   careDraw();
@@ -2217,7 +2297,7 @@ function careDraw(full){
   const p=carePet(); if (!p) return;
   const c=byId(C.fav);
   if (full){
-    $("cName").value=p.name; $("cTitle").textContent=p.name;
+    $("cName").value=p.name; $("cTitle").textContent=p.name+(c.shiny?" \u2726":"");
     $("cStage").dataset.fam=c.f;
     $("cPetImg").alt=`${p.name}, your ${FAM[c.f].name} ${c.v}`;
     const set=im=>{ if (C.fav===c.id){ $("cPetImg").src=im.src; careDirt(); careAccDraw(); } };
@@ -2406,7 +2486,7 @@ $("cStage").addEventListener("pointermove", e=>{
 });
 for (const ev of ["pointerup","pointercancel"]) $("cStage").addEventListener(ev, ()=>{ TICKLE.down=false; });
 function careSponge(e){ const st=$("cStage").getBoundingClientRect(), s=$("cSponge"); s.style.left=(e.clientX-st.left)+"px"; s.style.top=(e.clientY-st.top)+"px"; }
-$("cName").addEventListener("input", ()=>{ const p=carePet(); if (!p) return; p.name=$("cName").value.trim().slice(0,14) || byId(C.fav).name; $("cTitle").textContent=p.name; careSave(); });
+$("cName").addEventListener("input", ()=>{ const p=carePet(); if (!p) return; p.name=$("cName").value.trim().slice(0,14) || byId(C.fav).name; $("cTitle").textContent=p.name+(byId(C.fav).shiny?" \u2726":""); careSave(); });
 $("cSwap").addEventListener("click", ()=>{ careEndGame(true); careMode(""); $("cPanel").hidden=true; carePick(); });
 $("cPickCancel").addEventListener("click", ()=>careShown());
 $("cPickCards").addEventListener("click", e=>{

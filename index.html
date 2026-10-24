@@ -1149,15 +1149,15 @@ function resolve(){
     return loserStep();
   }
   switch (W.ab){
-    case "Double": take({mult:2,plus:0}); say(`${takes}. <b>Double!</b> It turns sideways and is worth 2.`); addLog("Double: worth 2."); break;
-    case "Boost":  take({mult:1,plus:1}); say(`${takes}. <b>Boost!</b> It turns sideways and is worth 2.`); addLog("Boost: worth 2."); break;
+    case "Double": take({mult:2,plus:0}); say(`${takes}. <b>Double!</b> It turns sideways and is worth 2.`); addLog(`Double: ${pp(w)} ${esc(L.name)} trophy is worth 2.`); break;
+    case "Boost":  take({mult:1,plus:1}); say(`${takes}. <b>Boost!</b> It turns sideways and is worth 2.`); addLog(`Boost: ${pp(w)} ${esc(L.name)} trophy is worth 2.`); break;
     case "Comeback":
-      if (behind){ take({mult:1,plus:1}); say(`${takes}. <b>Comeback!</b> ${N(w)} ${V(w,"were","was")} behind, so it's worth 2.`); addLog("Comeback: worth 2."); }
+      if (behind){ take({mult:1,plus:1}); say(`${takes}. <b>Comeback!</b> ${N(w)} ${V(w,"were","was")} behind, so it's worth 2.`); addLog(`Comeback: ${pp(w)} ${esc(L.name)} trophy is worth 2.`); }
       else { take(); say(`${takes}. Comeback only works when you're behind.`); }
       break;
     case "Bonus":
       S.tro[w].push({c:L,mult:1,plus:0}, {c:W,mult:1,plus:0});
-      say(`<b>Bonus!</b> ${N(w)} ${V(w,"take","takes")} ${esc(L.name)}${potText} <i>and</i> ${V(w,"keep","keeps")} ${esc(W.name)}: two trophies.`); addLog("Bonus: kept both cards."); break;
+      say(`<b>Bonus!</b> ${N(w)} ${V(w,"take","takes")} ${esc(L.name)}${potText} <i>and</i> ${V(w,"keep","keeps")} ${esc(W.name)}: two trophies.`); addLog(`Bonus: ${nn(w)} also ${V(w,"keep","keeps")} ${esc(W.name)} as a trophy.`); break;
     case "Reshuffle":
       take(); say(`${takes}.`);
       if (human) return ask("Reshuffle", w, `${head} ${S.ctx.parts.join(" ")} <b>Reshuffle:</b> ${nn(w)} may make ${nn(l)} redraw…`);
@@ -1183,9 +1183,9 @@ function loserStep(){
   const targets = S.tro[w].slice(0, base);          // not the trophies just won
   switch (L.ab){
     case "Look":
-      S.seen[l]=new Set(S.hand[w].map(c=>c.uid)); say(`${lost} <b>Look!</b> ${N(l)} can see ${pp(w)} hand until the next reveal.`); addLog("Look."); break;
+      S.seen[l]=new Set(S.hand[w].map(c=>c.uid)); say(`${lost} <b>Look!</b> ${N(l)} can see ${pp(w)} hand until the next reveal.`); addLog(`${P(l)} ${esc(L.name)} lost: Look at ${pp(w)} hand.`); break;
     case "Peek":
-      S.peek[l]=S.pack[w].slice(0,2); say(`${lost} <b>Peek!</b> ${N(l)} looked at the top of ${pp(w)} pack.`); addLog("Peek."); break;
+      S.peek[l]=S.pack[w].slice(0,2); say(`${lost} <b>Peek!</b> ${N(l)} looked at the top of ${pp(w)} pack.`); addLog(`${P(l)} ${esc(L.name)} lost: Peek at the top of ${pp(w)} pack.`); break;
     case "Family Search":
       if (human) return ask("Search", l, `${S.ctx.head} ${S.ctx.parts.join(" ")} ${lost} <b>Family Search:</b> ${nn(l)} ${V(l,"name","names")} a family…`);
       { const pool={W:0,R:0,M:0}; S.hand[w].concat(S.pack[w]).forEach(c=>pool[c.f]++); familySearch(l, ["W","R","M"].sort((x,y)=>pool[y]-pool[x])[0]); }
@@ -1199,7 +1199,7 @@ function loserStep(){
       const side = targets.filter(boosted);
       if (!side.length){ say(`${lost} <b>Flatten</b>, but there's no older sideways trophy to straighten.`); break; }
       if (human && side.length>1) return ask("Flatten", l, `${S.ctx.head} ${S.ctx.parts.join(" ")} ${lost} <b>Flatten:</b> ${nn(l)} ${V(l,"pick","picks")} a sideways trophy to straighten…`);
-      plain(side[0]); say(`${lost} <b>Flatten!</b> ${P(w)} ${esc(side[0].c.name)} turns straight, worth 1.`); addLog(`Flatten: ${esc(side[0].c.name)}.`);
+      plain(side[0]); say(`${lost} <b>Flatten!</b> ${P(w)} ${esc(side[0].c.name)} turns straight, worth 1.`); addLog(`${P(l)} ${esc(L.name)} lost: Flatten turned ${pp(w)} ${esc(side[0].c.name)} straight.`);
       break; }
   }
   return finishRound();
@@ -1207,6 +1207,7 @@ function loserStep(){
 function familySearch(p,f){
   const o=1-p; S.seen[p]=new Set(S.hand[o].filter(c=>c.f===f).map(c=>c.uid)); const n=S.seen[p].size;
   S.ctx.say(`<b>Family Search:</b> ${N(p)} named ${FAM[f].name}, and ${nn(o)} showed ${n} card${n===1?"":"s"}.`);
+  addLog(`Family Search: ${N(p)} named ${FAM[f].name} and saw ${n} of ${pp(o)} cards.`);
 }
 function reshuffle(p){ S.pack[p].push(...S.hand[p]); S.hand[p]=[]; shuffle(S.pack[p]); while (S.hand[p].length<5 && S.pack[p].length) S.hand[p].push(S.pack[p].shift()); }
 /* The loser steals or throws away one of the winner's older trophies. */
@@ -1215,7 +1216,7 @@ function hitTrophy(p, type, i){
   S.tro[o].splice(i,1);
   if (type==="Steal"){ S.tro[p].push(plain({c:t.c,mult:1,plus:0})); S.ctx.say(`<b>Steal!</b> ${N(p)} ${V(p,"take","takes")} ${pp(o)} ${esc(t.c.name)} trophy.`); }
   else { S.disc[o].push(t.c); S.ctx.say(`<b>Scatter!</b> ${P(o)} ${esc(t.c.name)} trophy is thrown away.`); }
-  addLog(`${type}: ${esc(t.c.name)}.`);
+  const lc=S.ctx.L; addLog(type==='Steal' ? `${P(p)} ${esc(lc.name)} lost: ${N(p)} stole ${pp(o)} ${esc(t.c.name)}.` : `${P(p)} ${esc(lc.name)} lost: ${N(p)} threw away ${pp(o)} ${esc(t.c.name)}.`);
 }
 function ask(type, owner, msg){ S.pending={type, owner, stage: owner===S.ctx.w ? "win" : "lose"}; S.phase="choice"; setMsg(msg); changed(); }
 
@@ -1228,7 +1229,7 @@ function choose(p, kind, arg){
     const i=+arg; if (!(i>=0 && i<base && S.tro[o][i])) return; hitTrophy(p,type,i);
   } else if (type==="Flatten"){
     const i=+arg, t=S.tro[o][i]; if (!t || i>=base || !boosted(t)) return; plain(t);
-    S.ctx.say(`<b>Flatten!</b> ${P(o)} ${esc(t.c.name)} turns straight, worth 1.`); addLog(`Flatten: ${esc(t.c.name)}.`);
+    S.ctx.say(`<b>Flatten!</b> ${P(o)} ${esc(t.c.name)} turns straight, worth 1.`); addLog(`${P(p)} ${esc(S.ctx.L.name)} lost: Flatten turned ${pp(o)} ${esc(t.c.name)} straight.`);
   } else if (type==="Reshuffle"){
     if (kind==="yes"){ reshuffle(l); S.ctx.say(`<b>Reshuffle!</b> ${N(l)} ${V(l,"shuffle","shuffles")} ${pp(l)} hand away and ${V(l,"draw","draws")} 5 new cards.`); }
     else S.ctx.say(`${N(w)} chose not to use Reshuffle.`);
@@ -1258,7 +1259,7 @@ function finishRound(){
     addLog(`Final score: ${N(0)} ${s0}, ${N(1)} ${s1}.`);
     return changed();
   }
-  if (S.round>=5) addLog(S.showdown?"Draw in the last round: sudden death Showdown.":"Tied after 5 rounds: sudden death.");
+  if (S.round>=5) addLog(S.showdown ? (S.round===5?"Draw in the last round: sudden death Showdown.":"Another draw: the Showdown goes on.") : (S.round===5?"Tied after 5 rounds: sudden death.":"Still tied: another sudden death round."));
   for (let p=0;p<2;p++) while (S.hand[p].length<5 && S.pack[p].length) S.hand[p].push(S.pack[p].shift());
   S.round++; S.phase="choose"; changed();
 }

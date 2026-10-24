@@ -613,6 +613,63 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
 .shinyword{color:#c2187a}
 @media (max-width:640px){:is(#screenMode,#screenDeck,#screenLobby,#screenCare){padding:12px 8px 18px;border-radius:20px}}
 @media (max-width:520px){.qchip{font-size:14px;padding:3px 10px}.qgoal{font-size:13px;line-height:1.25;padding:4px 10px}}
+/* ---------- Battle stage: creatures fight instead of cards ---------- */
+#screenGame .slots{display:none}
+.battle{width:100%;min-width:0}
+.stage{position:relative;width:min(100%,520px);height:clamp(190px,32vw,250px);margin:0 auto;overflow:visible}
+.stage .sground{position:absolute;left:4%;right:4%;bottom:10%;height:26%;border-radius:50%;background:#e9dcc2 var(--tx-cream);border:2.5px solid #2b2833;filter:url(#rough)}
+.fighter{position:absolute;bottom:16%;width:40%;height:74%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;--fam:#2b2833}
+.fighter.you{left:4%}.fighter.op{right:4%}
+.fighter.wood{--fam:var(--wood-ink)}.fighter.rock{--fam:var(--rock-ink)}.fighter.metal{--fam:var(--metal-ink)}
+.fbody{position:relative;width:100%;flex:1;min-height:0;display:flex;align-items:flex-end;justify-content:center;transform-origin:50% 100%}
+.fbody img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));animation:fidle 2.6s ease-in-out infinite}
+.fighter.op .fbody img{transform:scaleX(-1)}
+@keyframes fidle{50%{translate:0 -3px}}
+.ftag{margin-top:4px;font-family:var(--hand);font-size:clamp(14px,2.4vw,18px);color:var(--fam);background:#fffaf0;border:2px solid #2b2833;border-radius:999px;padding:0 10px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.ftag b{font-size:1.2em;margin-right:2px}
+.fighter.empty .fbody::before{content:"";width:58%;aspect-ratio:1;border:2.5px dashed rgba(43,40,51,.45);border-radius:50%;margin-bottom:8%}
+.fighter.empty .ftag{color:#5e5670;border-style:dashed}
+.fighter.mystery .fbody::before{content:"?";width:56%;aspect-ratio:1;display:grid;place-items:center;font-family:var(--hand);font-size:clamp(44px,8vw,70px);color:#fff;background:#3b3f6e;border:3px solid #2b2833;border-radius:46% 54% 50% 50%;margin-bottom:6%;animation:fwobble 1s ease-in-out infinite}
+@keyframes fwobble{50%{transform:rotate(4deg) scale(1.04)}}
+.fighter.empty img,.fighter.mystery img{display:none}
+.stage.idle::after,.stage:not(.fight):not(.done):not(.enter):not(.hidden)::after{content:"vs";position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-family:var(--hand);font-size:34px;color:#c2410c;opacity:.6}
+.stage.enter .fighter.you .fbody{animation:fin-l .45s ease-out both}
+.stage.enter .fighter.op .fbody{animation:fin-r .45s ease-out both}
+@keyframes fin-l{from{transform:translateX(-60%) scale(.6);opacity:0}}
+@keyframes fin-r{from{transform:translateX(60%) scale(.6);opacity:0}}
+/* the clash */
+.stage.fight .fighter.you .fbody{animation:dash-l .5s ease-in-out}
+.stage.fight .fighter.op .fbody{animation:dash-r .5s ease-in-out}
+@keyframes dash-l{45%{transform:translateX(38%) rotate(8deg)}}
+@keyframes dash-r{45%{transform:translateX(-38%) rotate(-8deg)}}
+/* knocked out, and the happy winner (final positions also apply without animation) */
+.stage.youwin .fighter.op .fbody,.stage.opwin .fighter.you .fbody{transform:rotate(var(--ko,18deg)) translateY(6%);opacity:.5;filter:grayscale(.6)}
+.stage.opwin .fighter.you{--ko:-18deg}
+.stage.youwin.fight .fighter.op .fbody{animation:dash-r .5s ease-in-out,ko-r .6s .5s ease-out both}
+.stage.opwin.fight .fighter.you .fbody{animation:dash-l .5s ease-in-out,ko-l .6s .5s ease-out both}
+@keyframes ko-r{from{transform:none;opacity:1;filter:none}40%{transform:translateX(18%) rotate(30deg) translateY(-14%)}to{transform:rotate(18deg) translateY(6%);opacity:.5;filter:grayscale(.6)}}
+@keyframes ko-l{from{transform:none;opacity:1;filter:none}40%{transform:translateX(-18%) rotate(-30deg) translateY(-14%)}to{transform:rotate(-18deg) translateY(6%);opacity:.5;filter:grayscale(.6)}}
+.stage.youwin.fight .fighter.you .fbody{animation:dash-l .5s ease-in-out,hop .5s .55s ease-out 2}
+.stage.opwin.fight .fighter.op .fbody{animation:dash-r .5s ease-in-out,hop .5s .55s ease-out 2}
+@keyframes hop{40%{transform:translateY(-16%) scale(.96,1.05)}80%{transform:translateY(0) scale(1.04,.96)}}
+.stage.draw.fight .fighter.you .fbody{animation:dash-l .5s ease-in-out,shake .5s .5s ease-in-out}
+.stage.draw.fight .fighter.op .fbody{animation:dash-r .5s ease-in-out,shake .5s .5s ease-in-out}
+@keyframes shake{25%{transform:translateX(-6%)}75%{transform:translateX(6%)}}
+.stage.youwin .fighter.you .ftag,.stage.opwin .fighter.op .ftag{background:#ffe9a8;border-color:#c2410c}
+.sfx{position:absolute;inset:0;pointer-events:none;z-index:3}
+.pow{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);font-family:var(--hand);font-size:clamp(30px,6vw,46px);color:#fff;background:#e85a2a;border:3px solid #2b2833;padding:2px 16px;border-radius:40% 60% 45% 55%;animation:pow .9s .25s ease-out both;white-space:nowrap}
+@keyframes pow{0%{transform:translate(-50%,-50%) scale(.2) rotate(-12deg);opacity:0}25%{transform:translate(-50%,-50%) scale(1.15) rotate(6deg);opacity:1}70%{opacity:1}100%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:0}}
+.sfxi{position:absolute;top:22%;transform:translate(-50%,0);font-family:var(--hand);font-size:clamp(20px,3.6vw,28px);color:#2b2833;background:#fffaf0;border:2.5px solid #2b2833;border-radius:14px;padding:0 10px;white-space:nowrap;animation:sfloat 2.2s ease-out both}
+.sfxi.win{background:#ffe9a8}
+.sfxi.lose{background:#ffd6e4}
+@keyframes sfloat{0%{transform:translate(-50%,10px) scale(.6);opacity:0}15%{transform:translate(-50%,0) scale(1.1);opacity:1}75%{opacity:1}100%{transform:translate(-50%,-34px) scale(1);opacity:0}}
+.sline{position:absolute;left:0;right:0;bottom:-6px;text-align:center;font-family:var(--hand);font-size:clamp(16px,2.8vw,20px);color:#2b2833}
+.sline b{color:#c2410c}
+@media (max-width:640px){.stage{height:clamp(180px,52vw,230px)}}
+#screenGame .arena{grid-template-columns:minmax(0,1fr) minmax(0,2.2fr) minmax(0,1fr)}
+@media (max-width:640px){#screenGame .arena{grid-template-columns:1fr 1fr}}
+.stage{margin-bottom:3.2em}
+.sline{bottom:auto;top:100%;padding-top:4px;line-height:1.25}
 </style>
 </head>
 <body>
@@ -809,10 +866,10 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
       <li>You and your opponent each have a pack of 15 cards: values 1 to 5 in Wood, Rock and Metal. You hold 5 cards.</li>
       <li>Each round, pick a card and press <b>Play</b>. Your opponent picks at the same time, then both cards flip.</li>
       <li><b>Wood beats Rock, Rock beats Metal, Metal beats Wood.</b> Same family: the <b>lower</b> value wins. The smallest are the mightiest!</li>
-      <li>The winner takes the losing card as a trophy. <b>Every trophy is worth 1 point.</b> The winning card goes to its owner's discard pile.</li>
+      <li>The winner takes the losing card as a trophy. <b>Collect the most trophies!</b> A sideways trophy counts as 2. The winning card goes to its owner's discard pile.</li>
       <li><b>Abilities:</b> 2s and 3s use their ability when they <b>win</b>. 4s and 5s use their ability when they <b>lose</b>. A Steal, Scatter or Flatten can't touch the trophy that was just won.</li>
       <li>Same family and same value is a draw. Both cards wait in the middle, and the next round is a <b>Showdown</b>: no abilities, and the winner takes everything in the middle too.</li>
-      <li>After 5 rounds, the player with the most points wins. A tie, or a draw in round 5, means sudden death.</li>
+      <li>After 5 rounds, the player with the most trophies wins (sideways ones count as 2). A tie, or a draw in round 5, means sudden death.</li>
       <li>First game? Turn <b>Abilities</b> off. Turn them on once you know how to play.</li>
     </ul>
   </details>
@@ -840,6 +897,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
       <small>Arrows point at who you beat.<br>Same family: lower value wins.</small>
     </div>
     <div class="battle">
+      <div class="stage" id="stage"><div class="sground"></div><div class="fighter you empty" id="fYou"><div class="fbody"><img alt=""></div><div class="ftag">You</div></div><div class="fighter op empty" id="fOp"><div class="fbody"><img alt=""></div><div class="ftag">Opponent</div></div><div class="sfx" id="sFx" aria-hidden="true"></div><div class="sline" id="sLine" aria-live="polite"></div></div>
       <div class="slots">
         <div class="slot" id="slotAi">Opponent</div>
         <span class="vs">vs</span>
@@ -895,9 +953,9 @@ const LORE = {"Root-A-Lot":"With roots that delve deep down.","The Old Oak":"The
   "Brockilly":"Can produce pebbles and then throw them.","Met":"Watch out for the blade arms.","Shetal":"Watch out for the spikes on the sides.",
   "Mattalie":"The teeth on the side turn into blades.","Cog-a-lin":"Look in the eyes too long and you will be hypnotised."};
 const ABTEXT = {   // 2s and 3s work when they WIN; 4s and 5s work when they LOSE
-  "Double":"When this card wins: the trophy is worth 2.",
-  "Boost":"When this card wins: +1 point, so the trophy is worth 2.",
-  "Comeback":"When this card wins and you're behind: the trophy is worth 2.",
+  "Double":"When this card wins: the trophy turns sideways and counts as 2.",
+  "Boost":"When this card wins: the trophy turns sideways and counts as 2.",
+  "Comeback":"When this card wins and you're behind: the trophy turns sideways and counts as 2.",
   "Bonus":"When this card wins: take the card you beat AND keep this card. Two trophies!",
   "Reshuffle":"When this card wins: you may make your opponent shuffle their hand into their pack and draw 5.",
   "Dig":"When this card wins: you may take a card from your discard pile into your hand.",
@@ -1149,10 +1207,10 @@ function resolve(){
     return loserStep();
   }
   switch (W.ab){
-    case "Double": take({mult:2,plus:0}); say(`${takes}. <b>Double!</b> It turns sideways and is worth 2.`); addLog(`Double: ${pp(w)} ${esc(L.name)} trophy is worth 2.`); break;
-    case "Boost":  take({mult:1,plus:1}); say(`${takes}. <b>Boost!</b> It turns sideways and is worth 2.`); addLog(`Boost: ${pp(w)} ${esc(L.name)} trophy is worth 2.`); break;
+    case "Double": take({mult:2,plus:0}); say(`${takes}. <b>Double!</b> It turns sideways and counts as 2.`); addLog(`Double: ${pp(w)} ${esc(L.name)} trophy counts as 2.`); break;
+    case "Boost":  take({mult:1,plus:1}); say(`${takes}. <b>Boost!</b> It turns sideways and counts as 2.`); addLog(`Boost: ${pp(w)} ${esc(L.name)} trophy counts as 2.`); break;
     case "Comeback":
-      if (behind){ take({mult:1,plus:1}); say(`${takes}. <b>Comeback!</b> ${N(w)} ${V(w,"were","was")} behind, so it's worth 2.`); addLog(`Comeback: ${pp(w)} ${esc(L.name)} trophy is worth 2.`); }
+      if (behind){ take({mult:1,plus:1}); say(`${takes}. <b>Comeback!</b> ${N(w)} ${V(w,"were","was")} behind, so it turns sideways and counts as 2.`); addLog(`Comeback: ${pp(w)} ${esc(L.name)} trophy counts as 2.`); }
       else { take(); say(`${takes}. Comeback only works when you're behind.`); }
       break;
     case "Bonus":
@@ -1199,7 +1257,7 @@ function loserStep(){
       const side = targets.filter(boosted);
       if (!side.length){ say(`${lost} <b>Flatten</b>, but there's no older sideways trophy to straighten.`); break; }
       if (human && side.length>1) return ask("Flatten", l, `${S.ctx.head} ${S.ctx.parts.join(" ")} ${lost} <b>Flatten:</b> ${nn(l)} ${V(l,"pick","picks")} a sideways trophy to straighten…`);
-      plain(side[0]); say(`${lost} <b>Flatten!</b> ${P(w)} ${esc(side[0].c.name)} turns straight, worth 1.`); addLog(`${P(l)} ${esc(L.name)} lost: Flatten turned ${pp(w)} ${esc(side[0].c.name)} straight.`);
+      plain(side[0]); say(`${lost} <b>Flatten!</b> ${P(w)} ${esc(side[0].c.name)} turns straight and counts as 1 again.`); addLog(`${P(l)} ${esc(L.name)} lost: Flatten turned ${pp(w)} ${esc(side[0].c.name)} straight.`);
       break; }
   }
   return finishRound();
@@ -1216,7 +1274,7 @@ function hitTrophy(p, type, i){
   S.tro[o].splice(i,1);
   if (type==="Steal"){ S.tro[p].push(plain({c:t.c,mult:1,plus:0})); S.ctx.say(`<b>Steal!</b> ${N(p)} ${V(p,"take","takes")} ${pp(o)} ${esc(t.c.name)} trophy.`); }
   else { S.disc[o].push(t.c); S.ctx.say(`<b>Scatter!</b> ${P(o)} ${esc(t.c.name)} trophy is thrown away.`); }
-  const lc=S.ctx.L; addLog(type==='Steal' ? `${P(p)} ${esc(lc.name)} lost: ${N(p)} stole ${pp(o)} ${esc(t.c.name)}.` : `${P(p)} ${esc(lc.name)} lost: ${N(p)} threw away ${pp(o)} ${esc(t.c.name)}.`);
+  const lc=S.ctx.L; addLog(type==='Steal' ? `${P(p)} ${esc(lc.name)} lost: ${nn(p)} stole ${pp(o)} ${esc(t.c.name)}.` : `${P(p)} ${esc(lc.name)} lost: ${nn(p)} threw away ${pp(o)} ${esc(t.c.name)}.`);
 }
 function ask(type, owner, msg){ S.pending={type, owner, stage: owner===S.ctx.w ? "win" : "lose"}; S.phase="choice"; setMsg(msg); changed(); }
 
@@ -1229,7 +1287,7 @@ function choose(p, kind, arg){
     const i=+arg; if (!(i>=0 && i<base && S.tro[o][i])) return; hitTrophy(p,type,i);
   } else if (type==="Flatten"){
     const i=+arg, t=S.tro[o][i]; if (!t || i>=base || !boosted(t)) return; plain(t);
-    S.ctx.say(`<b>Flatten!</b> ${P(o)} ${esc(t.c.name)} turns straight, worth 1.`); addLog(`${P(p)} ${esc(S.ctx.L.name)} lost: Flatten turned ${pp(o)} ${esc(t.c.name)} straight.`);
+    S.ctx.say(`<b>Flatten!</b> ${P(o)} ${esc(t.c.name)} turns straight and counts as 1 again.`); addLog(`${P(p)} ${esc(S.ctx.L.name)} lost: Flatten turned ${pp(o)} ${esc(t.c.name)} straight.`);
   } else if (type==="Reshuffle"){
     if (kind==="yes"){ reshuffle(l); S.ctx.say(`<b>Reshuffle!</b> ${N(l)} ${V(l,"shuffle","shuffles")} ${pp(l)} hand away and ${V(l,"draw","draws")} 5 new cards.`); }
     else S.ctx.say(`${N(w)} chose not to use Reshuffle.`);
@@ -1310,12 +1368,12 @@ function cardHTML(c, opt={}){
 const backHTML = () => `<div class="back" aria-hidden="true">${BACK}</div>`;
 function trophyHTML(t, i, mode){
   const v=tval(t), side=boosted(t);
-  const tag = t.mult>1 ? `×${t.mult} = ${v}` : t.plus ? `+${t.plus} = ${v}` : "";
+  const tag = v>1 ? `counts ${v}` : "";
   const body = cardHTML(t.c,{mini:true}), badge = tag ? `<span class="badge">${tag}</span>` : "";
   const lim = (S && S.ctx && S.ctx.base!=null) ? S.ctx.base : Infinity;
   const ok = i<lim && (mode==="any" || (mode==="side" && side));
-  if (ok) return `<button class="tro stealable ${side?"x2":""}" data-tro="${i}" aria-label="Choose ${esc(label(t.c))}, worth ${v}">${body}${badge}</button>`;
-  return `<span class="tro ${side?"x2":""}" title="${esc(label(t.c))}: ${v} points">${body}${badge}</span>`;
+  if (ok) return `<button class="tro stealable ${side?"x2":""}" data-tro="${i}" aria-label="Choose ${esc(label(t.c))}, counts as ${v}">${body}${badge}</button>`;
+  return `<span class="tro ${side?"x2":""}" title="${esc(label(t.c))}: counts as ${v}">${body}${badge}</span>`;
 }
 
 function render(){
@@ -1379,6 +1437,7 @@ function render(){
     : (canPick ? "Tap a card to see what it does." : S.picks[0] && S.phase==="choose" ? "Card chosen. Waiting for your opponent…" : "");
   $("playBtn").disabled=!(canPick && sc);
   $("log").innerHTML=S.log.map(x=>`<li>${txt(x)}</li>`).join("");
+  if (typeof renderStage==="function") renderStage();
 }
 
 // Called after every change to the game: redraw, and in an online game share the new view.
@@ -3021,6 +3080,74 @@ function worldShowCode(first){
     setTimeout(()=>$("qCodeOk").focus(), 30);
   });
 }
+
+/* ================= Battle stage: the creatures fight it out ================= */
+var STAGE_KEY = "", STAGE_FX = new Set();
+const FX_LABEL = {
+  Double:["×2!","win"], Boost:["×2!","win"], Comeback:["×2!","win"], Bonus:["+1 trophy!","win"],
+  Reshuffle:["\u{1F500} Reshuffle!","win"], Dig:["⛏️ Dig!","win"],
+  Look:["\u{1F440} Look!","lose"], Peek:["\u{1F440} Peek!","lose"], "Family Search":["\u{1F50D} Search!","lose"],
+  Steal:["✋ Steal!","lose"], Scatter:["\u{1F4A8} Poof!","lose"], Flatten:["\u{1F528} Flatten!","lose"]};
+
+function stageFighter(el, card, label){
+  const img=el.querySelector("img"), tag=el.querySelector(".ftag");
+  el.classList.remove("wood","rock","metal","mystery","empty");
+  if (!card){ el.classList.add("empty"); img.removeAttribute("src"); img.alt=""; tag.innerHTML=esc(label||""); return; }
+  if (card==="?" || card.back){ el.classList.add("mystery"); img.removeAttribute("src"); img.alt="A hidden creature"; tag.innerHTML="?"; return; }
+  el.classList.add(FAM[card.f].cls);
+  const id=card.id;
+  img.alt=card.name;
+  const done=im=>{ if (el.dataset.id===id) img.src=im.src; };
+  el.dataset.id=id;
+  const ready=careArt(id, done); img.src = ready ? ready.src : card.art;
+  tag.innerHTML=`<b>${card.v}</b> ${esc(card.name)}`;
+}
+function stageFx(text, side, kind){
+  const s=document.createElement("span"); s.className="sfxi "+(kind||""); s.textContent=text;
+  s.style.left = side==="you" ? "24%" : side==="op" ? "76%" : "50%";
+  s.addEventListener("animationend", ()=>s.remove()); setTimeout(()=>s.remove(), 3000);
+  $("sFx").appendChild(s);
+}
+function renderStage(){
+  const st=$("stage"); if (!st || !S) return;
+  const fy=$("fYou"), fo=$("fOp"), line=$("sLine");
+  const oppName = MODE==="solo" ? "The Gamekeeper" : (OPP_NAME || "Your opponent");
+  const ip=S.inPlay;
+  const stage = !ip ? "idle" : (S.phase==="reveal" || ip[0].back) ? "hidden" : (S.result===null || S.result===undefined) ? "enter" : "out";
+  const key = stage + "|" + (stage==="out" ? [ip[0].uid||ip[0].id, ip[1].uid||ip[1].id, String(S.result)].join("|") : stage==="idle" ? "" : (ip[0].uid||"")+(ip[1].uid||""));
+  if (key!==STAGE_KEY){
+    const prevStage = STAGE_KEY.split("|")[0];
+    STAGE_KEY=key;
+    st.className="stage";
+    if (stage==="idle"){ stageFighter(fy,null,"You"); stageFighter(fo,null,oppName); line.textContent="Pick a creature and send it into battle!"; }
+    else if (stage==="hidden"){ stageFighter(fy,"?"); stageFighter(fo,"?"); st.classList.add("hidden"); line.textContent="Creatures ready\u2026"; }
+    else if (stage==="enter"){ stageFighter(fy,ip[0]); stageFighter(fo,ip[1]); void st.offsetWidth; st.classList.add("enter"); line.textContent=""; }
+    else {
+      stageFighter(fy,ip[0]); stageFighter(fo,ip[1]);
+      const res=S.result, fresh = prevStage==="enter" || prevStage==="hidden";   // we watched this fight start
+      STAGE_FX=new Set();
+      if (!fresh) STAGE_FX.add("*old");
+      const cls = res==="draw" ? "draw" : res===0 ? "youwin" : "opwin";
+      void st.offsetWidth; st.classList.add(cls, fresh ? "fight" : "done");
+      if (res==="draw") line.innerHTML = `<b>Stand-off!</b> Same family, same number.`;
+      else { const W=ip[res], L=ip[1-res];
+        line.innerHTML = `<b>${res===0 ? "You win!" : esc(oppName)+" wins!"}</b> ${W.f===L.f ? "Same family: the lower number wins." : `${FAM[W.f].name} beats ${FAM[L.f].name}!`}`; }
+      if (fresh && !reduceMotionStage()){ const pow=document.createElement("span"); pow.className="pow"; pow.textContent = res==="draw" ? "CLANG!" : "POW!"; pow.addEventListener("animationend",()=>pow.remove()); $("sFx").appendChild(pow); }
+    }
+  }
+  // ability effects, once each, beside the creature that used them
+  if (stage==="out" && S.result!=="draw" && typeof S.msg==="string" && !STAGE_FX.has("*old")){
+    const re=/<b>(Double|Boost|Comeback|Bonus|Reshuffle|Dig|Look|Peek|Family Search|Steal|Scatter|Flatten)!?:?<\/b>/g; let m;
+    while ((m=re.exec(S.msg))){
+      const ab=m[1]; if (STAGE_FX.has(ab)) continue;
+      if (!/!<\/b>/.test(m[0])) continue;            // only once the ability has happened (not while choosing)
+      STAGE_FX.add(ab);
+      const [txt, who]=FX_LABEL[ab]; const winSide = S.result===0 ? "you" : "op", loseSide = S.result===0 ? "op" : "you";
+      setTimeout(()=>stageFx(txt, who==="win" ? winSide : loseSide, who), STAGE_FX.size*350+500);
+    }
+  }
+}
+function reduceMotionStage(){ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } }
 
 /* ---------- Starfield ---------- */
 (function(){

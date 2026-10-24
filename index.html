@@ -571,6 +571,13 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
 .qwstatus{margin:0;min-height:1.2em;font-family:var(--hand);color:#5e5670}
 .qwstatus.err{color:#b42318}
 #qWorld{background:var(--tx-gold)}
+#qCode{align-items:center;justify-content:center;background:rgba(20,26,62,.6)}
+.qcodecard{background:#fbf5ea var(--tx-paper);color:#2b2833;padding:20px 22px;border-radius:24px;position:relative;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 16px 50px -12px rgba(0,0,0,.75)}
+.qcodecard::after{content:"";position:absolute;inset:3px;border:3px solid #2b2833;border-radius:22px;filter:url(#rough);pointer-events:none}
+.qcodecard h2{color:#a3560e}
+.qcodebig{font-family:var(--hand);font-size:clamp(56px,16vw,84px);line-height:1;letter-spacing:.18em;padding:6px 10px 6px 24px;background:var(--tx-gold);border:3px solid #2b2833;border-radius:18px;user-select:all;-webkit-user-select:all}
+.qcodecard p{margin:0}
+.qcodemsg{min-height:1.2em;color:#2f7d32!important}
 
 /* Adventure: buttons, speech box and screens on crayon paper */
 .qwrap{border:0;box-shadow:0 16px 50px -12px rgba(0,0,0,.75)}
@@ -723,6 +730,17 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
             <div class="qfrow"><input id="qwCode" class="code" maxlength="4" autocomplete="off" placeholder="CODE" aria-label="Planet code"><button class="btn" id="qwJoin">Join a friend</button></div>
             <p class="qwstatus" id="qwStatus" aria-live="polite"></p>
           </div>
+        </div>
+      </div>
+      <div class="qover" id="qCode" hidden role="dialog" aria-labelledby="qCodeHead">
+        <div class="qcodecard">
+          <h2 id="qCodeHead">Your planet is ready!</h2>
+          <div class="label">Planet code</div>
+          <div class="qcodebig" id="qCodeBig" aria-live="polite"></div>
+          <p id="qCodeNote"></p>
+          <div class="qfrow"><button class="btn" id="qCodeCopy">Copy code</button><button class="btn" id="qCodeShare">Share</button></div>
+          <p class="qcodemsg" id="qCodeMsg" aria-live="polite"></p>
+          <div class="qfrow"><button class="btn primary" id="qCodeOk">Got it</button><button class="btn" id="qCodeLeave">Leave planet</button></div>
         </div>
       </div>
       <div class="qover" id="qReward" hidden role="dialog" aria-labelledby="qRewardHead"><h2 id="qRewardHead">Pick a card to keep</h2><div class="qpicks" id="qRewardCards"></div></div>
@@ -2951,7 +2969,7 @@ async function worldBackToMap(){
 function worldHud(){
   const chip=$("qWorld"); if (!chip) return;
   chip.hidden=!WORLD.on;
-  if (WORLD.on) chip.textContent=`\u{1F30D} ${WORLD.code} · ${1+Object.keys(WORLD.others).length}/${WORLD_MAX}`;
+  if (WORLD.on) chip.textContent=`\u{1F30D} Planet ${WORLD.code} \u00B7 ${1+Object.keys(WORLD.others).length}/${WORLD_MAX}`;
 }
 function worldLobbyInit(){
   $("qFriends").hidden=!worldAvailable();
@@ -2960,7 +2978,7 @@ function worldLobbyInit(){
 }
 $("qwHost").addEventListener("click", async ()=>{
   let code=""; for (let i=0;i<4;i++) code+=CODE_LETTERS[Math.floor(Math.random()*CODE_LETTERS.length)];
-  if (await worldOpen(code, true)){ qBegin(!qLoad()); worldToast(`Your planet code is ${code}. Tell your friends!`); }
+  if (await worldOpen(code, true)){ $("qTitle").hidden=true; await worldShowCode(true); qBegin(!qLoad()); }
 });
 $("qwCode").addEventListener("input",()=>{ $("qwCode").value=$("qwCode").value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,4); });
 $("qwJoin").addEventListener("click", async ()=>{
@@ -2969,12 +2987,34 @@ $("qwJoin").addEventListener("click", async ()=>{
   if (await worldOpen(code, false)){ qBegin(!qLoad()); worldToast(`You joined planet ${code}!`); }
 });
 $("qWorld").addEventListener("click", async ()=>{
-  if (QS!=="walk") return; QS="busy";
-  const n=Object.keys(WORLD.others).length;
-  const leave=await askYN(null, `Planet code ${WORLD.code}: ${n?`${n} friend${n>1?"s":""} here with you.`:"waiting for friends to join."} Tell friends this code so they can join. Leave this shared planet?`, "Stay", "Leave planet");
-  if (!leave){ await worldClose(); worldToast("You're exploring on your own now."); }
+  if (QS!=="walk") return; QS="busy"; HELD=null;
+  const r=await worldShowCode(false);
+  if (r==="leave"){ await worldClose(); worldToast("You're exploring on your own now."); }
   QS="walk";
 });
+/* The planet code, big, until the player is ready. Copy or share it to send to friends. */
+function worldShowCode(first){
+  return new Promise(res=>{
+    const ov=$("qCode"), n=Object.keys(WORLD.others).length;
+    $("qCodeBig").textContent=WORLD.code;
+    $("qCodeHead").textContent = first ? "Your planet is ready!" : "Your shared planet";
+    $("qCodeNote").textContent = (n ? `${n} friend${n>1?"s":""} here with you. ` : "No friends here yet. ")
+      + "To join, they open Adventure, choose Explore with friends, type this code and press Join a friend.";
+    $("qCodeShare").hidden = !navigator.share;
+    $("qCodeLeave").hidden = first;
+    $("qCodeMsg").textContent="";
+    ov.hidden=false;
+    const done=v=>{ ov.hidden=true; ["qCodeOk","qCodeLeave","qCodeCopy","qCodeShare"].forEach(id=>$(id).onclick=null); res(v); };
+    $("qCodeOk").onclick=()=>done("ok");
+    $("qCodeLeave").onclick=()=>done("leave");
+    const text=`Come and play Play for the Universe with me! My planet code is ${WORLD.code}`;
+    $("qCodeCopy").onclick=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(WORLD.code); ok=true; }catch(e){}
+      if (!ok){ try{ const t=document.createElement("textarea"); t.value=WORLD.code; document.body.appendChild(t); t.select(); ok=document.execCommand("copy"); t.remove(); }catch(e){} }
+      $("qCodeMsg").textContent = ok ? "Copied! Paste it into a message to your friends." : "Couldn't copy. Write the code down instead."; };
+    $("qCodeShare").onclick=async()=>{ try{ await navigator.share({title:"Play for the Universe", text}); }catch(e){} };
+    setTimeout(()=>$("qCodeOk").focus(), 30);
+  });
+}
 
 /* ---------- Starfield ---------- */
 (function(){

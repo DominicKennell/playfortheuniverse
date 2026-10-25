@@ -770,6 +770,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
 @keyframes pzhlp{50%{outline-color:rgba(242,193,78,.35)}}
 #pzGame,#pzBuild{padding-bottom:var(--tipspace,0)}
 @media (prefers-reduced-motion:reduce){.pztip,.pzhl{animation:none}}
+
+.pzwait{font-family:var(--hand);font-size:18px;color:#5e5670;padding:6px 0}
 </style>
 </head>
 <body>
@@ -968,7 +970,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
         <div class="pzdeck" id="pzDeck"></div>
         <div class="pzgo">
           <label class="pzsw"><input type="checkbox" id="pzAbil" checked> Abilities on <span class="meta" id="pzAbilNote"></span></label>
-          <button class="btn primary" id="pzPlay" disabled>Battle the Gamekeeper</button>
+          <span class="cheadbtns"><button class="btn" id="pzOnline" disabled>Play a friend online</button>
+          <button class="btn primary" id="pzPlay" disabled>Battle the Gamekeeper</button></span>
         </div>
       </section>
       <section class="zone" aria-label="Your collection">
@@ -1641,7 +1644,7 @@ let OPP_NAME = "";
    browsers through a public message relay. The player who makes the code runs the game. */
 const NET = {
   kind:null, room:null, game:null, clients:[], link:null, other:null, lastSent:null, beat:null,
-  code:"", role:null, actN:0, lastAct:0, guestDeck:null, offs:[], started:false,
+  code:"", role:null, actN:0, lastAct:0, guestDeck:null, guestPDeck:null, gtype:"classic", offs:[], started:false,
   async init(){
     try{ this.room = (window.claude && claude.use) ? await claude.use("room") : null; }catch(e){ this.room=null; }
     this.kind = this.room ? "room" : (typeof mqtt!=="undefined" ? "relay" : null);
@@ -1693,7 +1696,7 @@ const NET = {
             if (err) return;
             if (!up){ up=true; if (role==="host") finish(true); }
             if (role==="guest" && (!this.link || this.link===c)){
-              this.send(c,"h",{t:"hello", name:this.myName(), deck:this.myDeck()});
+              this.send(c,"h",{t:"hello", name:this.myName(), deck:this.myDeck(), pdeck:pzMyOnlineDeck()});
               if (this.lastSent) this.send(c,"h",{t:"act", a:this.lastSent});
             }
           });
@@ -1749,7 +1752,7 @@ const NET = {
   onMsg(m){
     if (!m || typeof m!=="object") return;
     if (this.role==="host"){
-      if (m.t==="hello"){ OPP_NAME=String(m.name||"Player 2").slice(0,16); if (!this.started){ this.guestDeck=this.validDeck(m.deck); this.startHosted(); } else this.publish(); }
+      if (m.t==="hello"){ OPP_NAME=String(m.name||"Player 2").slice(0,16); if (!this.started){ this.guestDeck=this.validDeck(m.deck); this.guestPDeck=pzValidDeck(m.pdeck); this.startHosted(); } else this.publish(); }
       else if (m.t==="act" && m.a && typeof m.a.n==="number" && m.a.n>this.lastAct){ this.lastAct=m.a.n; this.handle(m.a); }
     } else {
       if (m.t==="view" && m.v){ this.showView(m.v); }
@@ -1760,7 +1763,7 @@ const NET = {
   async openRoom(code, role){
     try{ this.game = await this.room.join("pftu-"+code.toLowerCase()); }
     catch(e){ this.status(e && e.code==="not_permitted" ? "Online games aren't available for your account on this page." : "Couldn't connect. Check your connection and try again.", true); return false; }
-    await this.game.presence({role, name:this.myName(), deck:this.myDeck(), view:null, act:null});
+    await this.game.presence({role, name:this.myName(), deck:this.myDeck(), pdeck:pzMyOnlineDeck(), view:null, act:null});
     this.offs.push(this.game.onPeers(ch=>this.onPeers(ch.peers), ()=>this.status("The connection was lost.", true)));
     this.offs.push(this.game.onConnection(c=>{ $("netStatus").textContent = c ? "" : "Reconnecting…"; }));
     return true;
@@ -1771,7 +1774,7 @@ const NET = {
       const g = others.find(p=>p.presence.role==="guest");
       if (!g){ if (this.started) this.opponentLeft(); return; }
       OPP_NAME = String(g.presence.name||"Player 2").slice(0,16);
-      if (!this.started){ this.guestDeck = this.validDeck(g.presence.deck); this.startHosted(); return; }
+      if (!this.started){ this.guestDeck = this.validDeck(g.presence.deck); this.guestPDeck = pzValidDeck(g.presence.pdeck); this.startHosted(); return; }
       const a=g.presence.act;
       if (a && typeof a.n==="number" && a.n>this.lastAct){ this.lastAct=a.n; this.handle(a); }
     } else if (this.role==="guest"){
@@ -1782,8 +1785,9 @@ const NET = {
   },
 
   /* ---- shared by both ---- */
-  opponentLeft(){ this.status("Your opponent has left."); if (S){ S.msg="Your opponent left the game."; render(); } },
+  opponentLeft(){ this.status("Your opponent has left."); if (PZ && PZ.ctl!=="solo"){ $("pzMsg").innerHTML=`<b class="pzfinal">${esc(PZ.names[1-PZ.me])} left the game.</b>`; $("pzAct").innerHTML=`<button class="btn primary" data-pz="${FRIEND_BATTLE?"fmap":"leave"}">${FRIEND_BATTLE?"Back to the map":"Leave game"}</button>`; return; } if (S){ S.msg="Your opponent left the game."; render(); } },
   showView(v){
+    if (v && v.g==="prize"){ this.started=true; return pzShowView(v); }
     if (S && S.seq===v.seq) return;
     if (v.nm) OPP_NAME = String(v.nm[1]||"Player 1").slice(0,16);
     if (!this.started){ this.started=true; showScreen("game"); }
@@ -1796,11 +1800,20 @@ const NET = {
   },
   startHosted(){
     if (!this.guestDeck) return;
+    if (this.gtype==="prize") return pzStartHosted();
     this.started=true; MODE="host"; CTRL=["local","remote"]; NAMES=[this.myName(), OPP_NAME||"Player 2"];
     showScreen("game");
     newGame([(FRIEND_BATTLE && Q) ? {...Q.pack} : deckChoice(DECK), this.guestDeck]);
   },
   publish(){
+    if (this.gtype==="prize"){
+      if (!PZ || PZ.ctl!=="host") return;
+      const v=pzViewFor(1);
+      if (this.kind==="relay"){ if (this.link && this.other) this.send(this.link,"g",{t:"view", to:this.other, v}); return; }
+      if (!this.game) return;
+      while (JSON.stringify(v).length>3600 && v.log.length) v.log.shift();
+      this.game.presence({view:v}).catch(()=>{}); return;
+    }
     if (!S) return;
     NAMES=[this.myName(), OPP_NAME||"Player 2"];
     const v=viewFor(1);
@@ -1810,6 +1823,7 @@ const NET = {
     this.game.presence({view:v}).catch(()=>{});
   },
   handle(a){
+    if (this.gtype==="prize") return pzHandleAct(a);
     if (!S) return;
     if (a.k==="play" && typeof a.id==="string") pick(1, "1-"+a.id);
     else if (a.k==="choose") choose(1, String(a.kind), a.arg);
@@ -1863,16 +1877,17 @@ $("myName").addEventListener("change",()=>{ try{ localStorage.setItem("pftu-name
 $("goDeck").addEventListener("click",()=>showScreen("mode"));
 $("screenStart").addEventListener("click",e=>{ if (e.target.closest("#goDeck")) return; $("screenStart").classList.add("done"); });
 $("modeSolo").addEventListener("click",()=>{ WANT="solo"; showScreen("deck"); });
-$("modeFriend").addEventListener("click",()=>{ if (!NET.kind) return; WANT="friend"; showScreen("deck"); });
+$("modeFriend").addEventListener("click",()=>{ if (!NET.kind) return; WANT="friend"; NET.gtype="classic"; showScreen("deck"); });
 $("deckBack").addEventListener("click",()=>showScreen("mode"));
 $("startGame").addEventListener("click",()=>{
   if (WANT==="solo"){ MODE="solo"; CTRL=["local","ai"]; NAMES=["You","The Gamekeeper"]; OPP_NAME=""; showScreen("game"); newGame(); }
   else { NET.status(""); $("hostCode").hidden=true; showScreen("lobby"); }
 });
-$("lobbyBack").addEventListener("click",async()=>{ await NET.leave(); showScreen("deck"); });
+$("lobbyBack").addEventListener("click",async()=>{ await NET.leave(); showScreen(WANT==="prize"?"prize":"deck"); });
 const CODE_LETTERS="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 $("hostBtn").addEventListener("click",async()=>{
   let code=""; for(let i=0;i<4;i++) code+=CODE_LETTERS[Math.floor(Math.random()*CODE_LETTERS.length)];
+  NET.gtype = WANT==="prize" ? "prize" : "classic";
   NET.status("Opening your game…");
   if (await NET.open(code,"host")){ MODE="host"; CTRL=["local","remote"]; $("hostCode").textContent=code; $("hostCode").hidden=false; NET.status("Tell your friend this code. The game starts when they join."); }
 });
@@ -3057,6 +3072,7 @@ function pzRenderBuild(){
   $("pzHeadLbl").textContent = q ? "Adventure: Gamekeeper's Prizes" : "Trading card game";
   $("pzHeadTitle").textContent = q ? `Build your deck to battle ${q.n.name}` : "The Gamekeeper's Prizes";
   $("pzPlay").textContent = q ? `Battle ${q.n.name}` : "Battle the Gamekeeper";
+  $("pzOnline").hidden = !!q; $("pzOnline").disabled = !checks.every(x=>x.ok) || !NET.kind;
   $("pzBack").textContent = q ? "Run away" : "Back";
   $("pzCollTitle").textContent = q ? "Creatures you've collected" : "Your collection";
   const ab=$("pzAbil"); if (q){ ab.checked=!!q.n.abil; ab.disabled=true; } else ab.disabled=false;
@@ -3075,28 +3091,34 @@ $("pzPlay").addEventListener("click",()=>{ if (!pzValid(PZ_DECK)) return;
   if (PZB){ const q=PZB; pzStart({mine:[...PZ_DECK], theirs:q.theirs, abil:!!q.n.abil, opp:q.n.name, quest:{n:q.n,res:q.res}, noise:q.noise, note:q.n.abil?"":"Starter battle: no abilities."}); }
   else pzStart(); });
 $("pzBack").addEventListener("click",()=>{
+  if (PZ && PZ.ctl && PZ.ctl!=="solo") return FRIEND_BATTLE ? worldBackToMap() : pzLeaveOnline();
   if (PZB && !PZ) return pzQuestDone("ran");
   if (PZ && PZ.quest) return pzQuestDone(PZ.over ? (PZ.result==="win"?0:PZ.result==="lose"?1:-1) : "ran");
   if (PZ && !PZ.over && !$("pzGame").hidden){ pzView("build"); return; } $("pzBack").textContent="Back"; showScreen("mode"); });
 
 /* ---------- the game ---------- */
 function pzView(v){ $("pzBuild").hidden = v!=="build"; $("pzGame").hidden = v!=="game"; if (v==="build") pzRenderBuild(); else pzRender(); window.scrollTo(0,0); }
-function pzShown(){ pzView(PZ && (PZ.quest || !PZ.over) ? "game" : "build"); }
+function pzShown(){ pzView(PZ && (PZ.quest || !PZ.over || (PZ.ctl&&PZ.ctl!=="solo")) ? "game" : "build"); }
 
 function pzStart(opts={}){
-  if (!opts.quest && !PZT.seen.firstgame && !PZT.off && opts.abil===undefined){ opts={...opts, abil:false, note:"Learning battle: abilities are off."}; }
+  if (!opts.quest && !opts.ctl && !PZT.seen.firstgame && !PZT.off && opts.abil===undefined){ opts={...opts, abil:false, note:"Learning battle: abilities are off."}; }
   const mk=(ids,p)=>shuffle(ids.map(id=>({...byId(id),uid:p+"-"+id})));
   const decks=[mk(opts.mine||PZ_DECK,0), mk(opts.theirs||pzRandomDeck(),1)];
   const opp=opts.opp||"The Gamekeeper";
   const prizes=shuffle(SLOTS.map(s=>{ const o=OPTIONS[s]; return {...o[Math.floor(Math.random()*o.length)],uid:"pz-"+s}; })).slice(0,PZ_ROUNDS);
   PZ={deck:decks, hand:[decks[0].splice(0,4),decks[1].splice(0,4)], pts:[0,0], won:[[],[]], prizes, pot:[], round:0,
-      sel:null, phase:"pick", last:null, log:opts.note?[opts.note]:[], over:false, abil: opts.abil===undefined ? $("pzAbil").checked : opts.abil,
-      opp, oppl: opp.startsWith("The ") ? "the"+opp.slice(3) : opp, quest:opts.quest||null, noise: opts.noise===undefined ? 0.35 : opts.noise, opts};
-  pzNext(); pzView("game");
+      sel:null, phase:"pick", last:null, log:opts.note?[[opts.note,opts.note]]:[], over:false, abil: opts.abil===undefined ? $("pzAbil").checked : opts.abil,
+      names:[opts.myName||"You", opp], me:0, ctl:opts.ctl||"solo", pick:[null,null], ready:[false,false], seq:0,
+      opp, oppl: pzLow(opp), quest:opts.quest||null, noise: opts.noise===undefined ? 0.35 : opts.noise, opts};
+  pzNext(); pzView("game"); pzSync();
 }
+const pzLow = n => n.startsWith("The ") ? "the"+n.slice(3) : n;
+// names from the point of view of player v
+const pzN  = (p,v,cap) => p===v ? (cap?"You":"you") : esc(cap ? PZ.names[p] : pzLow(PZ.names[p]));
+const pzPs = (p,v) => p===v ? "your" : esc(pzLow(PZ.names[p]))+"'s";
 function pzNext(){
   if (!PZ.prizes.length || !PZ.hand[0].length || !PZ.hand[1].length) return pzEnd();
-  PZ.round++; PZ.pot.push(PZ.prizes.pop()); PZ.phase="pick"; PZ.sel=null; PZ.last=null;
+  PZ.round++; PZ.pot.push(PZ.prizes.pop()); PZ.phase="pick"; PZ.sel=null; PZ.last=null; PZ.pick=[null,null]; PZ.ready=[false,false];
 }
 const pzWhy=(a,b)=>a.f===b.f ? `Same family: ${a.v} is lower than ${b.v}` : `${FAM[a.f].name} beats ${FAM[b.f].name}`;
 function pzAiPick(){
@@ -3112,72 +3134,106 @@ function pzAiPick(){
   }
   return best.c;
 }
+/* You press "Send it!" */
 function pzPlay(){
-  if (PZ.phase!=="pick" || !PZ.sel) return;
-  const a=PZ.hand[0].find(c=>c.uid===PZ.sel), b=pzAiPick(); if (!a) return;
+  if (PZ.phase!=="pick" || !PZ.sel || PZ.animating) return;
+  const me=PZ.me;
+  if (PZ.ctl==="guest"){ if (PZ.pick[me]) return; PZ.pick[me]=PZ.sel; NET.act({k:"pzplay", uid:PZ.sel}); pzRender(); return; }
+  PZ.pick[0]=PZ.sel;
+  if (PZ.ctl==="solo") PZ.pick[1]=pzAiPick().uid;
+  pzTryResolve(); pzRender(); pzSync();
+}
+function pzTryResolve(){
+  if (!PZ.pick[0] || !PZ.pick[1] || PZ.phase!=="pick") return;
+  const a=PZ.hand[0].find(c=>c.uid===PZ.pick[0]), b=PZ.hand[1].find(c=>c.uid===PZ.pick[1]);
+  if (!a || !b){ PZ.pick=[null,null]; return; }
+  pzResolve(a,b);
+}
+function pzResolve(a,b){
   PZ.hand[0]=PZ.hand[0].filter(c=>c!==a); PZ.hand[1]=PZ.hand[1].filter(c=>c!==b); PZ.sel=null;
-  const r=battle(a,b), on=PZ.abil, lines=[], fx=[]; let head="";
-  const val=PZ.pot.reduce((s,c)=>s+c.v,0), potName=PZ.pot.map(c=>esc(c.name)).join(" + "), potWas=[...PZ.pot]; let winner=null;
-  if (r===0){
-    head=`<b>Stand-off!</b> Same family, same number. The prize stays, and the next round is for both.`;
-    PZ.log.push(`Round ${PZ.round}: your ${esc(label(a))} and ${esc(PZ.oppl)}'s ${esc(label(b))} had a stand-off.`);
-  } else {
-    const w=r===1?0:1, l=1-w, wc=w===0?a:b, lc=w===0?b:a, who=w===0?"You win":`${esc(PZ.opp)} wins`;
-    let pts=val;
-    if (on && wc.v===2){ pts+=2; lines.push(`★ Boost! ${esc(wc.name)} adds +2.`); fx.push(["\u2B06\uFE0F Boost +2!",w,"win"]); }
-    if (on && wc.v===3){ const m=PZ.pot.filter(x=>x.f===wc.f).length; if (m){ pts+=3*m; lines.push(`★ Homecoming! The prize is ${FAM[wc.f].name}, like ${esc(wc.name)}: +${3*m}.`); fx.push([`\u{1F3E0} Homecoming +${3*m}!`,w,"win"]); } }
+  const r=battle(a,b), on=PZ.abil, ev=[], fx=[];
+  const val=PZ.pot.reduce((s,c)=>s+c.v,0), potWas=[...PZ.pot]; let winner=null, pts=0, wc=null, lc=null;
+  if (r!==0){
+    const w=r===1?0:1, l=1-w; wc=w===0?a:b; lc=w===0?b:a; winner=w; pts=val;
+    if (on && wc.v===2){ pts+=2; ev.push({ab:"Boost",c:wc}); fx.push(["⬆️ Boost +2!",w,"win"]); }
+    if (on && wc.v===3){ const m=PZ.pot.filter(x=>x.f===wc.f).length; if (m){ pts+=3*m; ev.push({ab:"Homecoming",c:wc,n:3*m}); fx.push([`\u{1F3E0} Homecoming +${3*m}!`,w,"win"]); } }
     PZ.pts[w]+=pts; PZ.pot.forEach((c,i)=>PZ.won[w].push({c, pts:i===0?pts:0}));
-    head=`<b>${who} the prize!</b> ${pzWhy(wc,lc)}. +${pts}`; winner=w;
-    PZ.log.push(`Round ${PZ.round}: ${w===0?"your":esc(PZ.oppl)+"'s"} ${esc(label(wc))} beat ${w===0?esc(PZ.oppl)+"'s":"your"} ${esc(label(lc))} and won ${potName} (+${pts}).`);
     PZ.pot=[];
-    if (on && lc.v===4){ PZ.hand[l].push(lc); PZ.pts[l]+=1; fx.push(["\u21A9\uFE0F Comeback +1!",l,"lose"]); lines.push(`★ Comeback! ${esc(lc.name)} goes back to ${l===0?"your":esc(PZ.oppl)+"'s"} hand, +1.`); }
+    if (on && lc.v===4){ PZ.hand[l].push(lc); PZ.pts[l]+=1; fx.push(["↩️ Comeback +1!",l,"lose"]); ev.push({ab:"Comeback",c:lc,p:l}); }
     if (on && lc.v===5){
       const i=PZ.won[w].findIndex(x=>x.c.v===1);
-      if (i>=0){ const t=PZ.won[w].splice(i,1)[0]; t.pts=1; PZ.won[l].push(t); PZ.pts[w]-=1; PZ.pts[l]+=1; fx.push(["\u270B Steal!",l,"lose"]); lines.push(`★ Steal! ${esc(lc.name)} steals ${esc(t.c.name)} (1 point) for ${l===0?"you":esc(PZ.oppl)}.`); }
-      else lines.push(`${esc(lc.name)} tried to Steal, but there was no 1-point prize to take.`);
+      if (i>=0){ const t=PZ.won[w].splice(i,1)[0]; t.pts=1; PZ.won[l].push(t); PZ.pts[w]-=1; PZ.pts[l]+=1; fx.push(["✋ Steal!",l,"lose"]); ev.push({ab:"Steal",c:lc,p:l,t:t.c}); }
+      else ev.push({ab:"NoSteal",c:lc});
     }
-    if (lines.length) PZ.log.push(...lines.map(x=>"&nbsp;&nbsp;"+x));
   }
   for (const p of [0,1]) if (PZ.deck[p].length) PZ.hand[p].push(PZ.deck[p].shift());
-  PZ.last={a,b,r,head,lines,potWas,winner,fx,shown:false}; PZ.phase="reveal"; pzRender();
+  const L={id:PZ.round, a, b, r, winner, pts, potWas, fx, ev, shown:false};
+  L.txt=[pzTexts(L,0), pzTexts(L,1)];
+  const potName=potWas.map(c=>esc(c.name)).join(" + ");
+  PZ.log.push([0,1].map(v=> r===0
+    ? `Round ${PZ.round}: ${pzPs(0,v)} ${esc(label(a))} and ${pzPs(1,v)} ${esc(label(b))} had a stand-off.`
+    : `Round ${PZ.round}: ${pzPs(winner,v)} ${esc(label(wc))} beat ${pzPs(1-winner,v)} ${esc(label(lc))} and won ${potName} (+${pts}).`));
+  L.txt[0].lines.forEach((x,i)=>PZ.log.push([ "&nbsp;&nbsp;"+x, "&nbsp;&nbsp;"+L.txt[1].lines[i] ]));
+  PZ.last=L; PZ.phase="reveal"; PZ.pick=[null,null];
+}
+function pzTexts(L,v){
+  if (L.r===0) return {head:`<b>Stand-off!</b> Same family, same number. The prize stays, and the next round is for both.`, lines:[]};
+  const w=L.winner, wc=w===0?L.a:L.b, lc=w===0?L.b:L.a;
+  const head=`<b>${pzN(w,v,true)} ${w===v?"win":"wins"} the prize!</b> ${pzWhy(wc,lc)}. +${L.pts}`;
+  const lines=L.ev.map(e=> e.ab==="Boost" ? `★ Boost! ${esc(e.c.name)} adds +2.`
+    : e.ab==="Homecoming" ? `★ Homecoming! The prize is ${FAM[e.c.f].name}, like ${esc(e.c.name)}: +${e.n}.`
+    : e.ab==="Comeback" ? `★ Comeback! ${esc(e.c.name)} goes back to ${pzPs(e.p,v)} hand, +1.`
+    : e.ab==="Steal" ? `★ Steal! ${esc(e.c.name)} steals ${esc(e.t.name)} (1 point) for ${pzN(e.p,v)}.`
+    : `${esc(e.c.name)} tried to Steal, but there was no 1-point prize to take.`);
+  return {head, lines};
 }
 function pzEnd(){
   PZ.over=true; PZ.phase="over";
   const [u,o]=PZ.pts, wu=PZ.won[0].length, wo=PZ.won[1].length;
   PZ.result = u>o||(u===o&&wu>wo) ? "win" : o>u||(u===o&&wo>wu) ? "lose" : "tie";
-  if (PZ.pot.length) PZ.log.push(`The last prize (${PZ.pot.map(c=>esc(c.name)).join(" + ")}) went to nobody.`);
+  if (PZ.pot.length){ const t=`The last prize (${PZ.pot.map(c=>esc(c.name)).join(" + ")}) went to nobody.`; PZ.log.push([t,t]); }
 }
+const pzMyResult = () => PZ.me===0 ? PZ.result : PZ.result==="win" ? "lose" : PZ.result==="lose" ? "win" : "tie";
 function pzRender(){
   if (!PZ) return;
-  $("pzYou").textContent=PZ.pts[0]; $("pzOpp").textContent=PZ.pts[1];
-  $("pzOppLbl").textContent=PZ.opp; $("pzOppPrizes").textContent=`${PZ.opp}'s prizes`;
-  $("pzBack").textContent = PZ.quest && !PZ.over ? "Run away" : "Back";
+  const me=PZ.me, op=1-me, oppName=esc(PZ.names[op]), online=PZ.ctl!=="solo";
+  $("pzYou").textContent=PZ.pts[me]; $("pzOpp").textContent=PZ.pts[op];
+  $("pzOppLbl").textContent=PZ.names[op]; $("pzOppPrizes").textContent=`${PZ.names[op]}'s prizes`;
+  $("pzBack").textContent = PZ.quest && !PZ.over ? "Run away" : online ? "Leave game" : "Back";
   $("pzRound").textContent = PZ.over ? "Game over" : `Prize ${PZ.round} of ${PZ_ROUNDS}`;
   const val=PZ.pot.reduce((s,c)=>s+c.v,0), L=PZ.last;
   $("pzWorth").textContent = PZ.pot.length ? `worth ${val} point${val===1?"":"s"}${PZ.pot.length>1?" (two prizes after a stand-off!)":""}`
-    : (L && L.winner!==null) ? (L.winner===0 ? "claimed by you!" : `claimed by ${PZ.oppl}`) : PZ.over ? "no prizes left" : "";
+    : (L && L.winner!==null) ? (L.winner===me ? "claimed by you!" : `claimed by ${pzLow(PZ.names[op])}`) : PZ.over ? "no prizes left" : "";
   pzStage();
-  if (L && !PZ.animating) $("pzMsg").innerHTML=L.lines.map(x=>`<span class="ab">${x}</span>`).join("");
+  const lines = L ? L.txt[me].lines : [];
+  if (L && !PZ.animating) $("pzMsg").innerHTML=lines.map(x=>`<span class="ab">${x}</span>`).join("");
   else $("pzMsg").innerHTML="";
   if (PZ.over){
-    const [u,o]=PZ.pts, t=PZ.result==="win"?"🏆 You win!":PZ.result==="lose"?`${esc(PZ.opp)} wins this time.`:"It's a tie!";
-    if (!PZ.animating) $("pzMsg").innerHTML=`<b class="pzfinal">${t}</b> You ${u}, ${esc(PZ.opp)} ${o}.`+(L?L.lines.map(x=>`<span class="ab">${x}</span>`).join(""):"");
-    $("pzAct").innerHTML = PZ.quest
+    const [u,o]=[PZ.pts[me],PZ.pts[op]], res=pzMyResult(), t=res==="win"?"🏆 You win!":res==="lose"?`${oppName} wins this time.`:"It's a tie!";
+    if (!PZ.animating) $("pzMsg").innerHTML=`<b class="pzfinal">${t}</b> You ${u}, ${oppName} ${o}.`+lines.map(x=>`<span class="ab">${x}</span>`).join("");
+    $("pzAct").innerHTML = PZ.animating ? "" : PZ.quest
       ? (PZ.result==="win" ? `<button class="btn primary" data-pz="qdone">Collect your reward</button>` : `<button class="btn primary" data-pz="qagain">Try again</button><button class="btn" data-pz="qdeck">Change deck</button><button class="btn" data-pz="qdone">Back to the map</button>`)
+      : online ? (FRIEND_BATTLE ? `<button class="btn primary" data-pz="again">Play again</button><button class="btn" data-pz="fmap">Back to the map</button>`
+                                : `<button class="btn primary" data-pz="again">Play again</button><button class="btn" data-pz="leave">Leave game</button>`)
       : `<button class="btn primary" data-pz="again">Play again</button><button class="btn" data-pz="deck">Change deck</button>`;
   } else if (PZ.animating){
     $("pzAct").innerHTML="";
   } else if (PZ.phase==="reveal"){
-    $("pzAct").innerHTML=`<button class="btn primary" data-pz="next">${PZ.prizes.length?"Next prize":"See the result"}</button>`;
+    $("pzAct").innerHTML = online && PZ.ready[me]
+      ? `<span class="meta pzwait">Waiting for ${oppName}…</span>`
+      : `<button class="btn primary" data-pz="next">${PZ.prizes.length?"Next prize":"See the result"}</button>`;
+  } else if (online && PZ.pick[me]){
+    $("pzAct").innerHTML=`<span class="meta pzwait">Sent! Waiting for ${oppName} to choose…</span>`;
   } else {
     $("pzAct").innerHTML=`<button class="btn primary" data-pz="play" ${PZ.sel?"":"disabled"}>Send it!</button>`;
   }
-  const pick=PZ.phase==="pick" && !PZ.over && !PZ.animating;
-  $("pzHand").innerHTML = PZ.hand[0].length ? PZ.hand[0].map(c=>pzCard(c,{button:true,extra:PZ.sel===c.uid?"sel":"",attrs:`data-pick="${c.uid}" aria-pressed="${PZ.sel===c.uid}"`,disabled:!pick})).join("") : `<span class="meta">No creatures left.</span>`;
-  $("pzLeft").textContent=`${PZ.deck[0].length} left in your deck`;
+  const pick=PZ.phase==="pick" && !PZ.over && !PZ.animating && !(online && PZ.pick[me]);
+  const hand=PZ.hand[me];
+  $("pzHand").innerHTML = hand.length ? hand.map(c=>pzCard(c,{button:true,extra:PZ.sel===c.uid?"sel":"",attrs:`data-pick="${c.uid}" aria-pressed="${PZ.sel===c.uid}"`,disabled:!pick})).join("") : `<span class="meta">No creatures left.</span>`;
+  $("pzLeft").textContent=`${PZ.deck[me].length} left in your deck`;
   const wonHTML=arr=>arr.length?arr.map(w=>`<span class="tro">${pzCard(w.c,{prize:true,extra:"mini"})}${w.pts?`<span class="badge">+${w.pts}</span>`:""}</span>`).join(""):`<span class="empty">None yet</span>`;
-  $("pzWonYou").innerHTML=wonHTML(PZ.won[0]); $("pzWonOpp").innerHTML=wonHTML(PZ.won[1]);
-  $("pzLog").innerHTML=PZ.log.map(x=>`<li>${x}</li>`).join("");
+  $("pzWonYou").innerHTML=wonHTML(PZ.won[me]); $("pzWonOpp").innerHTML=wonHTML(PZ.won[op]);
+  $("pzLog").innerHTML=PZ.log.map(x=>`<li>${Array.isArray(x)?x[me]:x}</li>`).join("");
   setTimeout(pzTutGame,60);
 }
 /* ---------- the battlefield (same stage as the classic battle) ---------- */
@@ -3202,43 +3258,46 @@ function pzFx(text, side, kind){
   s.addEventListener("animationend",()=>s.remove()); setTimeout(()=>s.remove(),3000); $("pzFx").appendChild(s);
 }
 function pzStage(){
-  const st=$("pzStage"), L=PZ.last, you=$("pzFYou"), op=$("pzFOp"), line=$("pzLine");
+  const st=$("pzStage"), L=PZ.last, you=$("pzFYou"), op=$("pzFOp"), line=$("pzLine"), me=PZ.me, oname=PZ.names[1-me];
   if (!L){
     st.className="stage pzstage idle";
-    const mine=PZ.hand[0].find(c=>c.uid===PZ.sel);
-    pzFighter(you, mine||null, "You"); pzFighter(op, PZ.over?null:"?", PZ.opp);
+    const mine=PZ.hand[me].find(c=>c.uid===(PZ.pick[me]||PZ.sel));
+    pzFighter(you, mine||null, "You"); pzFighter(op, PZ.over?null:"?", oname);
     pzTrophy(PZ.pot);
-    line.innerHTML = PZ.over ? "" : mine ? `Send <b>${esc(mine.name)}</b> after the prize?` : `Pick a creature. ${esc(PZ.opp)} is choosing too…`;
+    line.innerHTML = PZ.over ? "" : PZ.pick[me] ? `<b>${esc(mine?mine.name:"Your creature")}</b> is ready!` : mine ? `Send <b>${esc(mine.name)}</b> after the prize?` : `Pick a creature. ${esc(oname)} is choosing too…`;
     return;
   }
-  const res = L.r===0 ? "draw" : L.r===1 ? "youwin" : "opwin";
-  const fly = L.winner===0 ? "toYou" : L.winner===1 ? "toOp" : "";
+  const res = L.r===0 ? "draw" : L.winner===me ? "youwin" : "opwin";
+  const fly = L.winner===null ? "" : L.winner===me ? "toYou" : "toOp";
+  const myC = me===0 ? L.a : L.b, opC = me===0 ? L.b : L.a, head=L.txt[me].head;
   const quiet = (()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } })();
   if (L.shown || quiet){
     L.shown=true; st.className=`stage pzstage done ${res}`;
-    pzFighter(you,L.a); pzFighter(op,L.b); pzTrophy(L.winner===null?PZ.pot:L.potWas, fly?"gone":"");
-    line.innerHTML=L.head; return;
+    pzFighter(you,myC); pzFighter(op,opC); pzTrophy(L.winner===null?PZ.pot:L.potWas, fly?"gone":"");
+    line.innerHTML=head; return;
   }
   // play the fight once: hidden -> creatures jump in -> clash -> winner celebrates, prize flies over
   L.shown=true; PZ.animating=true; const myGame=PZ;
-  st.className="stage pzstage hidden"; pzFighter(you,"?","You"); pzFighter(op,"?",PZ.opp); pzTrophy(L.potWas); line.innerHTML="Ready…";
-  setTimeout(()=>{ if (PZ!==myGame) return; pzFighter(you,L.a); pzFighter(op,L.b); st.className="stage pzstage"; void st.offsetWidth; st.classList.add("enter"); line.innerHTML=""; }, 450);
+  st.className="stage pzstage hidden"; pzFighter(you,"?","You"); pzFighter(op,"?",oname); pzTrophy(L.potWas); line.innerHTML="Ready…";
+  setTimeout(()=>{ if (PZ!==myGame) return; pzFighter(you,myC); pzFighter(op,opC); st.className="stage pzstage"; void st.offsetWidth; st.classList.add("enter"); line.innerHTML=""; }, 450);
   setTimeout(()=>{ if (PZ!==myGame) return;
     st.className=`stage pzstage ${res}`; void st.offsetWidth; st.classList.add("fight");
     const pow=document.createElement("span"); pow.className="pow"; pow.textContent = L.r===0 ? "CLANG!" : "POW!"; pow.addEventListener("animationend",()=>pow.remove()); $("pzFx").appendChild(pow);
     if (fly) pzTrophy(L.potWas, fly);
-    line.innerHTML=L.head;
-    L.fx.forEach((f,i)=>setTimeout(()=>{ if (PZ===myGame) pzFx(f[0], f[1], f[2]); }, 700+i*450));
+    line.innerHTML=head;
+    L.fx.forEach((f,i)=>setTimeout(()=>{ if (PZ===myGame) pzFx(f[0], f[1]===me?0:1, f[2]); }, 700+i*450));
   }, 1000);
-  setTimeout(()=>{ if (PZ!==myGame) return; PZ.animating=false; pzRender(); }, 1900 + L.fx.length*450);
+  setTimeout(()=>{ if (PZ!==myGame) return; PZ.animating=false; if (PZ_PENDING){ const v=PZ_PENDING; PZ_PENDING=null; pzShowView(v); } else pzRender(); }, 1900 + L.fx.length*450);
 }
 $("pzHand").addEventListener("click",e=>{ const b=e.target.closest("[data-pick]"); if(!b||b.disabled||!PZ) return; PZ.sel = PZ.sel===b.dataset.pick?null:b.dataset.pick; pzRender(); });
 $("pzHand").addEventListener("dblclick",e=>{ const b=e.target.closest("[data-pick]"); if(!b||b.disabled||!PZ) return; PZ.sel=b.dataset.pick; pzPlay(); });
 $("pzAct").addEventListener("click",e=>{ const b=e.target.closest("[data-pz]"); if(!b||!PZ) return;
   const k=b.dataset.pz;
   if (k==="play") pzPlay();
-  else if (k==="next"){ pzNext(); pzRender(); }
-  else if (k==="again") pzStart();
+  else if (k==="next") pzReadyNext();
+  else if (k==="again"){ if (PZ.ctl==="guest") NET.act({k:"pzagain"}); else if (PZ.ctl==="host") pzStartHosted(); else pzStart(); }
+  else if (k==="leave") pzLeaveOnline();
+  else if (k==="fmap") worldBackToMap();
   else if (k==="deck"){ PZ=null; pzView("build"); }
   else if (k==="qagain") pzStart(PZ.opts);
   else if (k==="qdeck"){ PZ=null; pzView("build"); }
@@ -3321,6 +3380,7 @@ function pzTutGame(){
     pzTip("gend", PZ.abil ? `Well played! Build different decks and see which ones win the most prizes.` : `Well played! Next time, turn <b>abilities on</b>: every number from 2 to 5 gets a special power.`, "pzAct");
     PZT.seen.firstgame=true; pztSave(); return;
   }
+  if (PZ.ctl && PZ.ctl!=="solo"){ if (PZ.phase==="reveal" && L) for (const f of L.fx){ const ab=Object.keys(PZ_AB_TIP).find(k=>f[0].includes(k)); if (ab) pzTip("ab_"+ab, PZ_AB_TIP[ab], "pzStage"); } return; }
   if (PZ.phase==="pick"){
     pzTip("g1", `This is the <b>prize</b>. Win the battle and you score <b>its number</b>. This one is worth <b>${val}</b>.`, "pzTrophy");
     pzTip("g2", `Pick a creature from your hand <b>in secret</b>, then press <b>Send it!</b> I'm picking too. Wood beats Rock, Rock beats Metal, Metal beats Wood. Same family: the <b>lower</b> number wins.`, "pzHand");
@@ -3333,6 +3393,60 @@ function pzTutGame(){
     for (const f of L.fx){ const ab=Object.keys(PZ_AB_TIP).find(k=>f[0].includes(k)); if (ab) pzTip("ab_"+ab, PZ_AB_TIP[ab], "pzStage"); }
   }
 }
+
+
+/* ---------- Online Prizes (friends, and friendly battles on shared planets) ---------- */
+var PZ_PENDING=null;
+function pzSync(){ if (PZ && PZ.ctl==="host") NET.publish(); }
+function pzReadyNext(){
+  if (PZ.ctl==="solo"){ pzNext(); pzRender(); return; }
+  if (PZ.ctl==="guest"){ PZ.ready[PZ.me]=true; NET.act({k:"pznext"}); pzRender(); return; }
+  PZ.ready[0]=true; if (PZ.ready[1]) pzNext(); pzRender(); pzSync();
+}
+function pzMyOnlineDeck(){
+  if (FRIEND_BATTLE && Q){ const own=id=>Q.owned.includes(id)||Q.owned.includes(id+"*");
+    return (Q.pzdeck && pzValid(Q.pzdeck) && Q.pzdeck.every(own)) ? [...Q.pzdeck] : pzSubset(SLOTS.map(s=>Q.pack[s])); }
+  return pzValid(PZ_DECK) ? [...PZ_DECK] : pzRandomDeck();
+}
+function pzValidDeck(list){ return Array.isArray(list) && list.length===PZ_SIZE && list.every(id=>typeof id==="string" && byId(id)) && pzValid(list) ? list.map(String) : pzRandomDeck(); }
+function pzStartHosted(){
+  NET.started=true; MODE="host"; CTRL=["local","remote"];
+  showScreen("prize");
+  pzStart({mine:pzMyOnlineDeck(), theirs:NET.guestPDeck||pzRandomDeck(), abil:true, opp:OPP_NAME||"Player 2", myName:NET.myName(), ctl:"host"});
+}
+function pzHandleAct(a){
+  if (!PZ || PZ.ctl!=="host") return;
+  if (a.k==="pzplay" && PZ.phase==="pick" && !PZ.pick[1] && PZ.hand[1].some(c=>c.uid===a.uid)){ PZ.pick[1]=a.uid; pzTryResolve(); pzRender(); pzSync(); }
+  else if (a.k==="pznext" && PZ.phase==="reveal"){ PZ.ready[1]=true; if (PZ.ready[0]) pzNext(); pzRender(); pzSync(); }
+  else if (a.k==="pzagain" && PZ.over) pzStartHosted();
+}
+/* what the other player is allowed to see: their own hand, never yours */
+function pzViewFor(v){
+  const id=c=>c.id, won=w=>w.map(x=>[x.c.id,x.pts]), L=PZ.last;
+  PZ.seq=(PZ.seq||0)+1;
+  return {g:"prize", seq:PZ.seq, nm:[PZ.names[0], PZ.names[1]], round:PZ.round, phase:PZ.phase, over:PZ.over, result:PZ.result||null,
+    pts:PZ.pts, won:[won(PZ.won[0]),won(PZ.won[1])], pot:PZ.pot.map(id), left:PZ.prizes.length, hand:PZ.hand[v].map(id), hn:[PZ.hand[0].length,PZ.hand[1].length],
+    dn:[PZ.deck[0].length,PZ.deck[1].length], pick:[!!PZ.pick[0],!!PZ.pick[1]], ready:PZ.ready, abil:PZ.abil,
+    last: L ? {id:L.id, a:L.a.id, b:L.b.id, r:L.r, w:L.winner, pts:L.pts, pot:L.potWas.map(id), fx:L.fx, t:L.txt[v]} : null,
+    log: PZ.log.map(x=>Array.isArray(x)?x[v]:x)};
+}
+function pzShowView(v){
+  if (PZ && PZ.ctl==="guest" && PZ.seq===v.seq) return;
+  if (PZ && PZ.animating && PZ.ctl==="guest"){ PZ_PENDING=v; return; }
+  const card=(id,p)=>({...byId(id), uid:p+"-"+id}), prev=PZ;
+  if (!NET.started){ NET.started=true; }
+  const L=v.last ? {id:v.last.id, a:card(v.last.a,0), b:card(v.last.b,1), r:v.last.r, winner:v.last.w, pts:v.last.pts, potWas:v.last.pot.map(i=>card(i,"pz")), fx:v.last.fx,
+    txt:[v.last.t,v.last.t], shown: !!(prev && prev.ctl==="guest" && prev.last && prev.last.id===v.last.id && prev.last.shown)} : null;
+  const keepSel = prev && prev.ctl==="guest" && v.hand.some(i=>"1-"+i===prev.sel) ? prev.sel : null;
+  PZ={ctl:"guest", me:1, seq:v.seq, names:[String(v.nm[0]||"Player 1").slice(0,16), "You"], round:v.round, phase:v.phase, over:v.over, result:v.result,
+    pts:v.pts, won:v.won.map(w=>w.map(([i,p])=>({c:card(i,"pz"),pts:p}))), pot:v.pot.map(i=>card(i,"pz")), prizes:new Array(v.left).fill(0),
+    hand:[new Array(v.hn[0]).fill(0), v.hand.map(i=>card(i,1))], deck:[new Array(v.dn[0]).fill(0), new Array(v.dn[1]).fill(0)],
+    pick:[v.pick[0], v.pick[1] ? (prev&&prev.ctl==="guest"&&prev.pick[1]) || true : null], ready:v.ready, abil:v.abil, last:L, log:v.log, sel:keepSel, quest:null, opts:{}};
+  OPP_NAME=PZ.names[0];
+  if ($("screenPrize").hidden) showScreen("prize"); else pzView("game");
+}
+async function pzLeaveOnline(){ await NET.leave(); PZ=null; MODE="solo"; showScreen("prize"); }
+$("pzOnline").addEventListener("click",()=>{ if (!pzValid(PZ_DECK) || !NET.kind) return; WANT="prize"; NET.status(""); $("hostCode").hidden=true; showScreen("lobby"); });
 
 /* ================= Explore with friends: share a planet, see each other, battle for fun ================= */
 /* Everyone keeps their own saved progress. A shared planet only shares where each traveller is,
@@ -3490,11 +3604,13 @@ async function worldChallenge(r){
   QS="busy"; HELD=null; QPATH=null;
   if (r.busy){ await talk(null,[`${r.name} is busy right now. Try again in a moment.`]); QS="walk"; return; }
   if (!await askYN(null, `Challenge ${r.name} to a friendly battle? (Just for fun: no cards change hands.)`, "Yes, battle!", "Not now")){ QS="walk"; return; }
+  const prizeGame = !await askYN(null, "Which game?", "Classic battle", "Gamekeeper's Prizes");
+  NET.gtype = prizeGame ? "prize" : "classic";
   const bcode=(WORLD.code+Math.random().toString(36).slice(2,6)).toLowerCase();
   FRIEND_BATTLE=true; $("myName").value=WORLD.name; OPP_NAME=""; MODE="solo";
   if (!await NET.open(bcode,"host")){ FRIEND_BATTLE=false; await talk(null,["Couldn't start the battle. Check your connection and try again."]); QS="walk"; return; }
   WORLD.invite={bcode, to:r.id, name:r.name, t:Date.now()};
-  WORLD.tr.send({t:"invite", to:r.id, name:WORLD.name, bcode});
+  WORLD.tr.send({t:"invite", to:r.id, name:WORLD.name, bcode, g:NET.gtype});
   worldWaiting(`Waiting for ${r.name} to answer…`);
   setTimeout(async ()=>{ if (WORLD.invite && WORLD.invite.bcode===bcode){ WORLD.invite=null; await NET.leave(); FRIEND_BATTLE=false; worldWaiting(""); await talk(null,[`No answer from ${r.name}. Maybe next time!`]); QS="walk"; } }, 25000);
 }
@@ -3510,7 +3626,8 @@ async function worldOnMsg(m){
     const r=WORLD.others[m.from], who=String(m.name||(r&&r.name)||"A traveller").slice(0,16);
     if (QS!=="walk" || $("screenQuest").hidden || FRIEND_BATTLE){ WORLD.tr.send({t:"reply", to:m.from, ok:false, busy:true, bcode:m.bcode}); return; }
     QS="busy"; HELD=null; QPATH=null; WORLD.pending=m.bcode;
-    const yes=await askYN(who, `${who} challenges you to a friendly battle! (Just for fun: no cards change hands.)`, "Battle!", "Not now");
+    const kind = m.g==="prize" ? "Gamekeeper's Prizes battle" : "battle";
+    const yes=await askYN(who, `${who} challenges you to a friendly ${kind}! (Just for fun: no cards change hands.)`, "Battle!", "Not now");
     if (WORLD.pending!==m.bcode){ QS="walk"; return; }   // they cancelled while we were deciding
     WORLD.pending=null;
     WORLD.tr.send({t:"reply", to:m.from, ok:yes, bcode:m.bcode});
@@ -3532,7 +3649,7 @@ async function worldOnMsg(m){
   }
 }
 async function worldBackToMap(){
-  await NET.leave(); FRIEND_BATTLE=false; MODE="solo"; S=null;
+  await NET.leave(); FRIEND_BATTLE=false; MODE="solo"; S=null; PZ=null; NET.gtype="classic";
   showScreen("quest"); QS="walk"; worldPublish();
 }
 

@@ -750,6 +750,26 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
 .pzstage .fighter{height:58%}
 .pztrophy{width:19%}
 .pzp{max-width:84px}
+
+.pzslot .card.locked{opacity:.45;filter:grayscale(1);border-style:dashed}
+.pzslot .card.locked .art{display:grid;place-items:center;font-family:var(--hand);font-size:2.4em;color:var(--fam)}
+.pzslot .card.locked .name{font-size:.8em}
+
+/* tutorial bubbles */
+.pztutrow{display:flex;justify-content:flex-end;margin-bottom:-6px}
+.pztip{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(520px,calc(100% - 24px));z-index:60;
+  background:#fffaf0 var(--tx-paper);color:#2b2833;border-radius:18px;padding:12px 16px 12px;box-shadow:0 10px 40px rgba(0,0,0,.45);animation:pztipin .3s ease-out}
+.pztip::after{content:"";position:absolute;inset:0;border:2.5px solid #2b2833;border-radius:inherit;filter:url(#rough);pointer-events:none}
+.pztipwho{font-family:var(--hand);color:#c2410c;font-size:18px}
+.pztip p{margin:4px 0 10px;font-size:clamp(15px,3.6vw,17px);line-height:1.45}
+.pztip b{color:#7a3200}
+.pztipbtns{display:flex;gap:8px;flex-wrap:wrap}
+.pztip .btn:not(.primary){background:#efe6d2;color:#2b2833;border-color:#c9bba0;backdrop-filter:none}
+@keyframes pztipin{from{transform:translate(-50%,16px);opacity:0}}
+.pzhl{outline:3px solid #f2c14e!important;outline-offset:5px;border-radius:14px;animation:pzhlp 1.2s ease-in-out infinite}
+@keyframes pzhlp{50%{outline-color:rgba(242,193,78,.35)}}
+#pzGame,#pzBuild{padding-bottom:var(--tipspace,0)}
+@media (prefers-reduced-motion:reduce){.pztip,.pzhl{animation:none}}
 </style>
 </head>
 <body>
@@ -924,10 +944,11 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
   </section>
 
   <section class="screen stack pz" id="screenPrize" hidden aria-label="The Gamekeeper's Prizes">
-    <div class="deckhead"><div><div class="label">Trading card game</div><h2>The Gamekeeper's Prizes</h2></div>
+    <div class="deckhead"><div><div class="label" id="pzHeadLbl">Trading card game</div><h2 id="pzHeadTitle">The Gamekeeper's Prizes</h2></div>
       <div class="cheadbtns"><button class="btn" id="pzBack">Back</button></div></div>
 
     <div id="pzBuild" class="stack">
+      <div class="pztutrow"><button class="btn" id="pzTutAgain">Show the tutorial again</button></div>
       <details class="rules pzrules">
         <summary>How to play</summary>
         <ul>
@@ -946,12 +967,12 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
         <ul class="pzchecks" id="pzChecks" aria-live="polite"></ul>
         <div class="pzdeck" id="pzDeck"></div>
         <div class="pzgo">
-          <label class="pzsw"><input type="checkbox" id="pzAbil" checked> Abilities on</label>
+          <label class="pzsw"><input type="checkbox" id="pzAbil" checked> Abilities on <span class="meta" id="pzAbilNote"></span></label>
           <button class="btn primary" id="pzPlay" disabled>Battle the Gamekeeper</button>
         </div>
       </section>
       <section class="zone" aria-label="Your collection">
-        <div class="zone-head"><h2>Your collection</h2><span class="meta">Tap a creature to add it. Tap it again to take it out.</span></div>
+        <div class="zone-head"><h2 id="pzCollTitle">Your collection</h2><span class="meta">Tap a creature to add it. Tap it again to take it out.</span></div>
         <p class="meta" id="pzFull" hidden style="margin:0">Your deck is full. Take a creature out to swap in a different one.</p>
         <div class="pzcoll" id="pzColl"></div>
       </section>
@@ -985,6 +1006,11 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:ra
         <section class="zone"><div class="label" id="pzOppPrizes">Gamekeeper's prizes</div><div class="trophies" id="pzWonOpp"></div></section>
       </div>
       <details class="log"><summary>What happened</summary><ol id="pzLog"></ol></details>
+    </div>
+    <div class="pztip" id="pzTip" hidden role="dialog" aria-live="polite" aria-label="Tip from the Gamekeeper">
+      <div class="pztipwho">The Gamekeeper</div>
+      <p id="pzTipText"></p>
+      <div class="pztipbtns"><button class="btn primary" id="pzTipNext">Next</button><button class="btn" id="pzTipSkip">Skip tutorial</button></div>
     </div>
   </section>
   <section class="screen stack" id="screenGame" hidden aria-label="Game">
@@ -1828,7 +1854,7 @@ function showScreen(name){
   window.scrollTo(0,0);
   if (name==="quest") questShown();
   if (name==="care") careShown(); else careHide();
-  if (name==="prize") pzShown();
+  if (name==="prize") pzShown(); else if (typeof pzTipHide==="function") pzTipHide();
 }
 function savedName(){ try{ return localStorage.getItem("pftu-name")||""; }catch(e){ return ""; } }
 $("myName").value = savedName();
@@ -2981,9 +3007,11 @@ const PZ_AB = {2:["Boost","When it wins: +2 points."],3:["Homecoming","When it w
                4:["Comeback","When it loses: back to your hand, and you score 1."],5:["Steal","When it loses: steal a 1-point prize from the winner."]};
 const PZ_SIZE=10, PZ_SUM=30, PZ_ROUNDS=10;
 const PZ_STARTER=["W1","W2","W4","W5","R2","R3","R5","M1","M3","M4"].map(s=>BASE[s]);
-let PZ=null, PZ_DECK=pzLoad();
+let PZ=null, PZB=null, PZ_DECK=pzLoad();   // PZB: building a deck for an Adventure battle
 function pzLoad(){ try{ const d=JSON.parse(localStorage.getItem("pftu-prize-deck")); if (Array.isArray(d) && d.every(id=>byId(id))) return d; }catch(e){} return [...PZ_STARTER]; }
-function pzSave(){ try{ localStorage.setItem("pftu-prize-deck",JSON.stringify(PZ_DECK)); }catch(e){} }
+function pzSave(){
+  if (PZB){ Q.pzdeck=[...PZ_DECK]; qSave(); return; }   // Adventure keeps its own deck, made from cards you own
+  try{ localStorage.setItem("pftu-prize-deck",JSON.stringify(PZ_DECK)); }catch(e){} }
 const pzAbOn = () => PZ ? PZ.abil : $("pzAbil").checked;
 
 function pzChecks(ids){
@@ -3020,28 +3048,43 @@ function pzRenderBuild(){
   $("pzDeck").innerHTML = sorted.length ? sorted.map(c=>pzCard(c,{button:true,attrs:`data-out="${c.id}"`})).join("") : `<span class="empty">Tap creatures below to add them.</span>`;
   $("pzColl").innerHTML = "WRM".split("").map(f=>`<div class="pzfam"><h3>${FAM[f].name}</h3><div class="pzslots">${
     [1,2,3,4,5].map(v=>`<div class="pzslot">${OPTIONS[f+v].map(c=>{
+      if (PZB && !PZB.own(c.id)) return `<span class="card ${FAM[c.f].cls} locked" title="Not found yet" aria-label="${FAM[c.f].name} ${c.v}: not found yet"><span class="top"><span class="val">${c.v}</span></span><span class="art">?</span><span class="name">Not found yet</span></span>`;
       const inDeck=PZ_DECK.includes(c.id), full=!inDeck && PZ_DECK.length>=PZ_SIZE;
       return pzCard(c,{button:true,extra:inDeck?"in":"",attrs:`data-toggle="${c.id}" aria-pressed="${inDeck}"`,disabled:full});
     }).join("")}</div>`).join("")}</div></div>`).join("");
   $("pzPlay").disabled=!checks.every(x=>x.ok);
+  const q=PZB;
+  $("pzHeadLbl").textContent = q ? "Adventure: Gamekeeper's Prizes" : "Trading card game";
+  $("pzHeadTitle").textContent = q ? `Build your deck to battle ${q.n.name}` : "The Gamekeeper's Prizes";
+  $("pzPlay").textContent = q ? `Battle ${q.n.name}` : "Battle the Gamekeeper";
+  $("pzBack").textContent = q ? "Run away" : "Back";
+  $("pzCollTitle").textContent = q ? "Creatures you've collected" : "Your collection";
+  const ab=$("pzAbil"); if (q){ ab.checked=!!q.n.abil; ab.disabled=true; } else ab.disabled=false;
+  $("pzAbilNote").textContent = q ? (q.n.abil ? "(this family uses abilities)" : "(starter battle: no abilities)") : (!PZT.seen.firstgame && !PZT.off ? "(off for your learning battle)" : "");
+  setTimeout(pzTutBuild,50);
   $("pzFull").hidden = PZ_DECK.length<PZ_SIZE;
 }
 $("pzColl").addEventListener("click",e=>{ const b=e.target.closest("[data-toggle]"); if(!b||b.disabled) return;
   const id=b.dataset.toggle, i=PZ_DECK.indexOf(id); if (i>=0) PZ_DECK.splice(i,1); else if (PZ_DECK.length<PZ_SIZE) PZ_DECK.push(id);
   pzSave(); pzRenderBuild(); });
 $("pzDeck").addEventListener("click",e=>{ const b=e.target.closest("[data-out]"); if(!b) return; PZ_DECK.splice(PZ_DECK.indexOf(b.dataset.out),1); pzSave(); pzRenderBuild(); });
-$("pzStarter").addEventListener("click",()=>{ PZ_DECK=[...PZ_STARTER]; pzSave(); pzRenderBuild(); });
-$("pzRandom").addEventListener("click",()=>{ PZ_DECK=pzRandomDeck(); pzSave(); pzRenderBuild(); });
+$("pzStarter").addEventListener("click",()=>{ PZ_DECK = PZB && !PZ_STARTER.every(PZB.own) ? pzSubset(SLOTS.map(s=>Q.pack[s])) : [...PZ_STARTER]; pzSave(); pzRenderBuild(); });
+$("pzRandom").addEventListener("click",()=>{ PZ_DECK = PZB ? pzSubset(shuffle(CATALOG.map(c=>c.id).filter(PZB.own))) : pzRandomDeck(); pzSave(); pzRenderBuild(); });
 $("pzClear").addEventListener("click",()=>{ PZ_DECK=[]; pzSave(); pzRenderBuild(); });
-$("pzPlay").addEventListener("click",()=>{ if (pzValid(PZ_DECK)) pzStart(); });
+$("pzPlay").addEventListener("click",()=>{ if (!pzValid(PZ_DECK)) return;
+  if (PZB){ const q=PZB; pzStart({mine:[...PZ_DECK], theirs:q.theirs, abil:!!q.n.abil, opp:q.n.name, quest:{n:q.n,res:q.res}, noise:q.noise, note:q.n.abil?"":"Starter battle: no abilities."}); }
+  else pzStart(); });
 $("pzBack").addEventListener("click",()=>{
+  if (PZB && !PZ) return pzQuestDone("ran");
   if (PZ && PZ.quest) return pzQuestDone(PZ.over ? (PZ.result==="win"?0:PZ.result==="lose"?1:-1) : "ran");
   if (PZ && !PZ.over && !$("pzGame").hidden){ pzView("build"); return; } $("pzBack").textContent="Back"; showScreen("mode"); });
 
 /* ---------- the game ---------- */
 function pzView(v){ $("pzBuild").hidden = v!=="build"; $("pzGame").hidden = v!=="game"; if (v==="build") pzRenderBuild(); else pzRender(); window.scrollTo(0,0); }
 function pzShown(){ pzView(PZ && (PZ.quest || !PZ.over) ? "game" : "build"); }
+
 function pzStart(opts={}){
+  if (!opts.quest && !PZT.seen.firstgame && !PZT.off && opts.abil===undefined){ opts={...opts, abil:false, note:"Learning battle: abilities are off."}; }
   const mk=(ids,p)=>shuffle(ids.map(id=>({...byId(id),uid:p+"-"+id})));
   const decks=[mk(opts.mine||PZ_DECK,0), mk(opts.theirs||pzRandomDeck(),1)];
   const opp=opts.opp||"The Gamekeeper";
@@ -3120,7 +3163,7 @@ function pzRender(){
     const [u,o]=PZ.pts, t=PZ.result==="win"?"🏆 You win!":PZ.result==="lose"?`${esc(PZ.opp)} wins this time.`:"It's a tie!";
     if (!PZ.animating) $("pzMsg").innerHTML=`<b class="pzfinal">${t}</b> You ${u}, ${esc(PZ.opp)} ${o}.`+(L?L.lines.map(x=>`<span class="ab">${x}</span>`).join(""):"");
     $("pzAct").innerHTML = PZ.quest
-      ? (PZ.result==="win" ? `<button class="btn primary" data-pz="qdone">Collect your reward</button>` : `<button class="btn primary" data-pz="qagain">Try again</button><button class="btn" data-pz="qdone">Back to the map</button>`)
+      ? (PZ.result==="win" ? `<button class="btn primary" data-pz="qdone">Collect your reward</button>` : `<button class="btn primary" data-pz="qagain">Try again</button><button class="btn" data-pz="qdeck">Change deck</button><button class="btn" data-pz="qdone">Back to the map</button>`)
       : `<button class="btn primary" data-pz="again">Play again</button><button class="btn" data-pz="deck">Change deck</button>`;
   } else if (PZ.animating){
     $("pzAct").innerHTML="";
@@ -3135,6 +3178,7 @@ function pzRender(){
   const wonHTML=arr=>arr.length?arr.map(w=>`<span class="tro">${pzCard(w.c,{prize:true,extra:"mini"})}${w.pts?`<span class="badge">+${w.pts}</span>`:""}</span>`).join(""):`<span class="empty">None yet</span>`;
   $("pzWonYou").innerHTML=wonHTML(PZ.won[0]); $("pzWonOpp").innerHTML=wonHTML(PZ.won[1]);
   $("pzLog").innerHTML=PZ.log.map(x=>`<li>${x}</li>`).join("");
+  setTimeout(pzTutGame,60);
 }
 /* ---------- the battlefield (same stage as the classic battle) ---------- */
 function pzFighter(el, card, tag){
@@ -3197,12 +3241,13 @@ $("pzAct").addEventListener("click",e=>{ const b=e.target.closest("[data-pz]"); 
   else if (k==="again") pzStart();
   else if (k==="deck"){ PZ=null; pzView("build"); }
   else if (k==="qagain") pzStart(PZ.opts);
+  else if (k==="qdeck"){ PZ=null; pzView("build"); }
   else if (k==="qdone") pzQuestDone(PZ.result==="win"?0:PZ.result==="lose"?1:-1); });
 $("modePrize").addEventListener("click",()=>showScreen("prize"));
 
 /* ---------- Prizes battles in Adventure ---------- */
 function pzSubset(ids){   // every legal 10-card deck you can make from these cards; pick one at random
-  ids=[...new Set(ids.map(id=>String(id).replace(/\*$/,"")))];
+  ids=shuffle([...new Set(ids.map(id=>String(id).replace(/\*$/,"")))]);
   const ok=[], cur=[];
   (function go(i){ if (cur.length===PZ_SIZE){ if (pzValid(cur)) ok.push([...cur]); return; }
     if (ok.length>400 || ids.length-i < PZ_SIZE-cur.length) return;
@@ -3217,16 +3262,76 @@ function pzQuestMine(){
 function pzQuestBattle(n){
   return new Promise(res=>{
     QS="battle"; HELD=null; qPackValid();
-    const mine=pzQuestMine(), theirs=pzSubset(Object.values(npcDeck(n)));
-    const noise = n.level==="easy" ? 1.4 : n.level==="hard" ? 0.1 : 0.35;
-    pzStart({mine:mine.ids, theirs, abil:!!n.abil, opp:n.name, quest:{n,res}, noise, note:mine.note+(n.abil?"":" Starter battle: no abilities.")});
+    const own=id=>Q.owned.includes(id)||Q.owned.includes(id+"*");
+    const saved=Q.pzdeck && pzValid(Q.pzdeck) && Q.pzdeck.every(own) ? [...Q.pzdeck] : null;
+    PZB={n, res, own, keep:PZ_DECK, theirs:pzSubset(Object.values(npcDeck(n))), noise: n.level==="easy" ? 1.4 : n.level==="hard" ? 0.1 : 0.35};
+    PZ=null; PZ_DECK = saved || pzSubset(SLOTS.map(s=>Q.pack[s]));
     showScreen("prize");
   });
 }
 function pzQuestDone(r){
-  const q=PZ&&PZ.quest; PZ=null; $("pzBack").textContent="Back";
+  const q=PZB; if (q){ Q.pzdeck=[...PZ_DECK]; PZ_DECK=q.keep; }
+  PZ=null; PZB=null; $("pzBack").textContent="Back";
   if (!q) return showScreen("mode");
   MODE="solo"; showScreen("quest"); q.res(r);
+}
+
+/* ---------- Tutorial: the Gamekeeper explains, one bubble at a time ---------- */
+const PZT_KEY="pftu-prize-tut";
+var PZT=(()=>{ try{ return JSON.parse(localStorage.getItem(PZT_KEY))||{seen:{}}; }catch(e){ return {seen:{}}; } })();
+if (!PZT.seen) PZT.seen={};
+function pztSave(){ try{ localStorage.setItem(PZT_KEY,JSON.stringify(PZT)); }catch(e){} }
+var TIPQ=[], TIPON=null;
+function pzTip(key, html, target){
+  if (PZT.off || PZT.seen[key] || (TIPON&&TIPON.key===key) || TIPQ.some(t=>t.key===key)) return;
+  TIPQ.push({key,html,target}); if (!TIPON) pzTipNext(); else $("pzTipNext").textContent="Next";
+}
+function pzTipClearHL(){ document.querySelectorAll(".pzhl").forEach(e=>e.classList.remove("pzhl")); }
+function pzTipNext(){
+  pzTipClearHL(); TIPON=TIPQ.shift()||null;
+  const box=$("pzTip"); document.documentElement.style.setProperty("--tipspace", TIPON?"200px":"0px");
+  if (!TIPON){ box.hidden=true; return; }
+  $("pzTipText").innerHTML=TIPON.html; box.hidden=false;
+  $("pzTipNext").textContent = TIPQ.length ? "Next" : "Got it!";
+  const t=TIPON.target && $(TIPON.target);
+  if (t && t.offsetParent!==null){ t.classList.add("pzhl"); try{ t.scrollIntoView({block:"center",behavior:"smooth"}); }catch(e){ t.scrollIntoView(); } }
+  setTimeout(()=>{ try{ $("pzTipNext").focus({preventScroll:true}); }catch(e){} },30);
+}
+function pzTipHide(){ if (!$("pzTip")) return; TIPQ=[]; TIPON=null; pzTipClearHL(); document.documentElement.style.setProperty("--tipspace","0px"); const b=$("pzTip"); if (b) b.hidden=true; }
+$("pzTipNext").addEventListener("click",()=>{ if (TIPON){ PZT.seen[TIPON.key]=true; pztSave(); } pzTipNext(); });
+$("pzTipSkip").addEventListener("click",()=>{ PZT.off=true; pztSave(); pzTipHide(); });
+$("pzTutAgain").addEventListener("click",()=>{ PZT={seen:{}}; pztSave(); pzTipHide(); pzTutBuild(); });
+
+const PZ_AB_TIP = {
+  Boost:"<b>★ Boost!</b> When a <b>2</b> wins, it adds <b>+2 points</b>.",
+  Homecoming:"<b>★ Homecoming!</b> When a <b>3</b> wins a prize of <b>its own family</b>, it adds <b>+3 points</b>.",
+  Comeback:"<b>★ Comeback!</b> When a <b>4</b> loses, it isn't used up: it goes <b>back to its owner's hand</b>, and they score 1.",
+  Steal:"<b>★ Steal!</b> When a <b>5</b> loses, it <b>steals a 1-point prize</b> from the winner."};
+function pzTutBuild(){
+  if ($("pzBuild").hidden) return;
+  pzTip("b1", `Welcome to my Prizes, traveller! Before you battle, you <b>build a deck of 10 creatures</b>. I've filled one in to get you started.`, "pzDeck");
+  pzTip("b2", `Every deck follows <b>3 rules</b>: the numbers <b>add up to 30</b>, only <b>one of each 1</b>, and at least <b>3 of each family</b>. When all three are ticked, you're ready.`, "pzChecks");
+  pzTip("b3", `Tap creatures here to swap them in and out. Want more mighty 1s and 2s? Then you'll need some big numbers to make 30. Choosing is half the fun!`, "pzColl");
+  pzTip("b4", PZB ? `Press the battle button when your deck is ready!` : `Your first battle is a <b>learning battle</b> with abilities off. Press <b>Battle the Gamekeeper</b> when you're ready!`, "pzPlay");
+}
+function pzTutGame(){
+  if (!PZ || PZ.animating || $("pzGame").hidden) return;
+  const val=PZ.pot.reduce((s,c)=>s+c.v,0), L=PZ.last;
+  if (PZ.over){
+    pzTip("gend", PZ.abil ? `Well played! Build different decks and see which ones win the most prizes.` : `Well played! Next time, turn <b>abilities on</b>: every number from 2 to 5 gets a special power.`, "pzAct");
+    PZT.seen.firstgame=true; pztSave(); return;
+  }
+  if (PZ.phase==="pick"){
+    pzTip("g1", `This is the <b>prize</b>. Win the battle and you score <b>its number</b>. This one is worth <b>${val}</b>.`, "pzTrophy");
+    pzTip("g2", `Pick a creature from your hand <b>in secret</b>, then press <b>Send it!</b> I'm picking too. Wood beats Rock, Rock beats Metal, Metal beats Wood. Same family: the <b>lower</b> number wins.`, "pzHand");
+    if (val>=4 && PZT.seen.g3) pzTip("g4", `A big prize! This is a good moment for one of your <b>strongest</b> creatures.`, "pzTrophy");
+    if (PZ.pot.length>1) pzTip("g6", `There are <b>two prizes</b> now, worth ${val} together. Whoever wins this round takes both!`, "pzTrophy");
+  }
+  if (PZ.phase==="reveal" && L){
+    if (L.r===0) pzTip("g5", `<b>Stand-off!</b> Same family and same number, so nobody wins. The prize stays, and the next round is for <b>both</b> prizes.`, "pzTrophy");
+    pzTip("g3", `Both creatures that battled are now <b>used up</b> for the rest of the game. Save your mighty ones for the big prizes!`, "pzHand");
+    for (const f of L.fx){ const ab=Object.keys(PZ_AB_TIP).find(k=>f[0].includes(k)); if (ab) pzTip("ab_"+ab, PZ_AB_TIP[ab], "pzStage"); }
+  }
 }
 
 /* ================= Explore with friends: share a planet, see each other, battle for fun ================= */
